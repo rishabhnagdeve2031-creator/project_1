@@ -280,7 +280,7 @@ export default function LiveMap() {
               <span className="pulse-dot"></span> LIVE
             </span>
           </div>
-          <p className="sidebar-subtitle">Jim Corbett National Park - Core Zone</p>
+          <p className="sidebar-subtitle">Umred-Karhandla Wildlife Sanctuary</p>
 
           <div className="tiger-list">
             {tigers.map((tiger) => {
@@ -436,7 +436,7 @@ export default function LiveMap() {
         .map-legend {
           position: absolute;
           top: 16px;
-          right: 16px;
+          left: 16px;
           z-index: 1000;
           background: rgba(14, 20, 27, 0.88);
           backdrop-filter: blur(8px);

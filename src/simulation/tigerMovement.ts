@@ -9,15 +9,15 @@ export interface TigerVectorState {
 const tigerVectorMap = new Map<string, TigerVectorState>();
 
 /**
- * Bounds for Jim Corbett National Park Core Zone
- * Lat: 29.5050° N to 29.5650° N
- * Lng: 78.8350° E to 78.9350° E
+ * Bounds for Umred-Karhandla Wildlife Sanctuary & surrounding zones (Nagpur)
+ * Lat: 20.700° N to 20.930° N
+ * Lng: 79.350° E to 79.680° E
  */
 const BOUNDS = {
-  minLat: 29.5050,
-  maxLat: 29.5650,
-  minLng: 78.8350,
-  maxLng: 78.9350
+  minLat: 20.700,
+  maxLat: 20.930,
+  minLng: 79.350,
+  maxLng: 79.680
 };
 
 /**
