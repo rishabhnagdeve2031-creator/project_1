@@ -1,0 +1,99 @@
+/**
+ * Wildlife Simulation Data Model — Tiger Telemetry Data
+ * Umred-Karhandla Wildlife Sanctuary & Nagpur Region Tracking
+ */
+
+export type AnimalSpecies = 'tiger';
+
+export interface PathPoint {
+  lat: number;
+  lng: number;
+  timestamp?: string;
+}
+
+export interface Animal {
+  id: string;
+  name: string;
+  species: AnimalSpecies;
+  emoji: string;
+  lat: number;
+  lng: number;
+  currentZone: string;
+  previousZone: string;
+  speed: number;        // km/h (current)
+  maxSpeed: number;     // km/h (species max for gauge scaling)
+  color: string;
+  pathHistory: PathPoint[];
+}
+
+// ── Backwards-compatibility alias ──
+export type Tiger = Animal;
+
+export const ANIMALS: Animal[] = [
+  // ─── TIGERS ───────────────────────────────────────────────
+  {
+    id: 'tiger-01',
+    name: 'Sultan',
+    species: 'tiger',
+    emoji: '🐅',
+    lat: 20.8330,
+    lng: 79.5230,
+    currentZone: 'Core Zone',
+    previousZone: 'Core Zone',
+    speed: 3.5,
+    maxSpeed: 56,
+    color: '#f97316',
+    pathHistory: [
+      { lat: 20.8285, lng: 79.5180, timestamp: '09:30 AM' },
+      { lat: 20.8305, lng: 79.5200, timestamp: '10:00 AM' },
+      { lat: 20.8318, lng: 79.5215, timestamp: '10:15 AM' },
+      { lat: 20.8330, lng: 79.5230, timestamp: '10:30 AM' }
+    ]
+  },
+  {
+    id: 'tiger-02',
+    name: 'Shera',
+    species: 'tiger',
+    emoji: '🐅',
+    lat: 20.7720,
+    lng: 79.4450,
+    currentZone: 'Buffer Zone',
+    previousZone: 'Core Zone',
+    speed: 4.2,
+    maxSpeed: 56,
+    color: '#eab308',
+    pathHistory: [
+      { lat: 20.7660, lng: 79.4380, timestamp: '09:30 AM' },
+      { lat: 20.7685, lng: 79.4408, timestamp: '10:00 AM' },
+      { lat: 20.7702, lng: 79.4428, timestamp: '10:15 AM' },
+      { lat: 20.7720, lng: 79.4450, timestamp: '10:30 AM' }
+    ]
+  },
+  {
+    id: 'tiger-03',
+    name: 'Maya',
+    species: 'tiger',
+    emoji: '🐅',
+    lat: 20.7180,
+    lng: 79.6350,
+    currentZone: 'Transition Zone',
+    previousZone: 'Buffer Zone',
+    speed: 2.8,
+    maxSpeed: 56,
+    color: '#ef4444',
+    pathHistory: [
+      { lat: 20.7130, lng: 79.6290, timestamp: '09:30 AM' },
+      { lat: 20.7150, lng: 79.6315, timestamp: '10:00 AM' },
+      { lat: 20.7165, lng: 79.6332, timestamp: '10:15 AM' },
+      { lat: 20.7180, lng: 79.6350, timestamp: '10:30 AM' }
+    ]
+  }
+];
+
+// Backwards-compat: keep TIGERS export pointing to only tigers
+export const TIGERS = ANIMALS.filter(a => a.species === 'tiger');
+
+// Species display labels (kept for backwards-compat with tigers.ts re-export)
+export const SPECIES_LABELS: Record<AnimalSpecies, string> = {
+  tiger: 'Tiger',
+};
