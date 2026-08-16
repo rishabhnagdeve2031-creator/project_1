@@ -1,40 +1,42 @@
 /**
- * PenchGuard AI — Demo/Prototype Data
- * All data is simulated for hackathon demonstration purposes.
- * Clearly labeled as PROTOTYPE DATA — not real Pench Tiger Reserve operational data.
+ * PenchGuard AI — Complete Demo/Prototype Data Layer
+ * Pench Tiger Reserve Prototype Datasets
  */
 
-// ── Camera Traps ──────────────────────────────────────────────
+// ── Camera Trap Stations (Survey-Effort Aware) ─────────────────
 export const CAMERAS = [
-  { id: 'CT-001', location: 'Core Zone A - Watering Hole', lat: 21.7380, lng: 79.3150, zone: 'Core Zone', status: 'online', lastCapture: '2 min ago', imagesProcessed: 142, animalsDetected: 18, battery: 92, signal: 95 },
-  { id: 'CT-002', location: 'Core Zone A - Trail Junction', lat: 21.7420, lng: 79.3200, zone: 'Core Zone', status: 'online', lastCapture: '5 min ago', imagesProcessed: 98, animalsDetected: 12, battery: 87, signal: 88 },
-  { id: 'CT-003', location: 'Core Zone B - River Crossing', lat: 21.7500, lng: 79.3350, zone: 'Core Zone', status: 'online', lastCapture: '8 min ago', imagesProcessed: 156, animalsDetected: 22, battery: 78, signal: 92 },
-  { id: 'CT-004', location: 'Core Zone B - Bamboo Thicket', lat: 21.7550, lng: 79.3400, zone: 'Core Zone', status: 'online', lastCapture: '12 min ago', imagesProcessed: 67, animalsDetected: 8, battery: 95, signal: 90 },
-  { id: 'CT-005', location: 'Core Zone C - Salt Lick', lat: 21.7300, lng: 79.3050, zone: 'Core Zone', status: 'online', lastCapture: '3 min ago', imagesProcessed: 203, animalsDetected: 31, battery: 64, signal: 85 },
-  { id: 'CT-006', location: 'Buffer Zone North - Forest Edge', lat: 21.7600, lng: 79.3100, zone: 'Buffer Zone', status: 'online', lastCapture: '15 min ago', imagesProcessed: 45, animalsDetected: 5, battery: 91, signal: 78 },
-  { id: 'CT-007', location: 'Buffer Zone North - Ridge Path', lat: 21.7650, lng: 79.3250, zone: 'Buffer Zone', status: 'online', lastCapture: '7 min ago', imagesProcessed: 89, animalsDetected: 11, battery: 82, signal: 82 },
-  { id: 'CT-008', location: 'Buffer Zone East - Stream Bed', lat: 21.7350, lng: 79.3500, zone: 'Buffer Zone', status: 'online', lastCapture: '20 min ago', imagesProcessed: 112, animalsDetected: 14, battery: 73, signal: 75 },
-  { id: 'CT-009', location: 'Buffer Zone South - Meadow', lat: 21.7100, lng: 79.3000, zone: 'Buffer Zone', status: 'online', lastCapture: '4 min ago', imagesProcessed: 78, animalsDetected: 9, battery: 88, signal: 80 },
-  { id: 'CT-010', location: 'Buffer Zone West - Old Trail', lat: 21.7250, lng: 79.2800, zone: 'Buffer Zone', status: 'offline', lastCapture: '2 hours ago', imagesProcessed: 34, animalsDetected: 3, battery: 12, signal: 15 },
-  { id: 'CT-011', location: 'Boundary Zone A - Village Edge', lat: 21.6950, lng: 79.2650, zone: 'Boundary Zone', status: 'online', lastCapture: '6 min ago', imagesProcessed: 56, animalsDetected: 7, battery: 80, signal: 68 },
-  { id: 'CT-012', location: 'Boundary Zone A - Crop Field', lat: 21.6900, lng: 79.2550, zone: 'Boundary Zone', status: 'online', lastCapture: '10 min ago', imagesProcessed: 43, animalsDetected: 4, battery: 76, signal: 62 },
-  { id: 'CT-013', location: 'Boundary Zone B - Road Crossing', lat: 21.7700, lng: 79.3500, zone: 'Boundary Zone', status: 'online', lastCapture: '18 min ago', imagesProcessed: 29, animalsDetected: 2, battery: 85, signal: 55 },
-  { id: 'CT-014', location: 'Boundary Zone B - Sensitive Corridor', lat: 21.6920, lng: 79.2600, zone: 'Boundary Zone', status: 'online', lastCapture: '1 min ago', imagesProcessed: 167, animalsDetected: 19, battery: 69, signal: 72 },
-  { id: 'CT-015', location: 'Core Zone A - Den Site', lat: 21.7400, lng: 79.3180, zone: 'Core Zone', status: 'online', lastCapture: '9 min ago', imagesProcessed: 91, animalsDetected: 15, battery: 83, signal: 93 },
-  { id: 'CT-016', location: 'Buffer Zone East - Hilltop', lat: 21.7450, lng: 79.3550, zone: 'Buffer Zone', status: 'online', lastCapture: '14 min ago', imagesProcessed: 38, animalsDetected: 4, battery: 90, signal: 70 },
-  { id: 'CT-017', location: 'Core Zone C - Pond', lat: 21.7280, lng: 79.3100, zone: 'Core Zone', status: 'online', lastCapture: '6 min ago', imagesProcessed: 124, animalsDetected: 20, battery: 71, signal: 87 },
-  { id: 'CT-018', location: 'Buffer Zone South - Grassland', lat: 21.7050, lng: 79.2900, zone: 'Buffer Zone', status: 'offline', lastCapture: '3 hours ago', imagesProcessed: 22, animalsDetected: 1, battery: 5, signal: 0 },
-  { id: 'CT-019', location: 'Boundary Zone C - Farm Border', lat: 21.6850, lng: 79.2700, zone: 'Boundary Zone', status: 'online', lastCapture: '11 min ago', imagesProcessed: 31, animalsDetected: 3, battery: 77, signal: 58 },
-  { id: 'CT-020', location: 'Core Zone B - Teak Forest', lat: 21.7480, lng: 79.3280, zone: 'Core Zone', status: 'online', lastCapture: '3 min ago', imagesProcessed: 108, animalsDetected: 16, battery: 86, signal: 91 },
+  { id: 'CT-001', location: 'Core Zone A - Watering Hole', lat: 21.7380, lng: 79.3150, zone: 'Core Zone', status: 'online', lastCapture: '2 min ago', imagesProcessed: 142, animalsDetected: 18, battery: 92, signal: 95, installationDate: '2024-01-15', surveyActive: true },
+  { id: 'CT-002', location: 'Core Zone A - Trail Junction', lat: 21.7420, lng: 79.3200, zone: 'Core Zone', status: 'online', lastCapture: '5 min ago', imagesProcessed: 98, animalsDetected: 12, battery: 87, signal: 88, installationDate: '2024-01-15', surveyActive: true },
+  { id: 'CT-003', location: 'Core Zone B - River Crossing', lat: 21.7500, lng: 79.3350, zone: 'Core Zone', status: 'online', lastCapture: '8 min ago', imagesProcessed: 156, animalsDetected: 22, battery: 78, signal: 92, installationDate: '2024-02-01', surveyActive: true },
+  { id: 'CT-004', location: 'Core Zone B - Bamboo Thicket', lat: 21.7550, lng: 79.3400, zone: 'Core Zone', status: 'online', lastCapture: '12 min ago', imagesProcessed: 67, animalsDetected: 8, battery: 95, signal: 90, installationDate: '2024-02-01', surveyActive: true },
+  { id: 'CT-005', location: 'Core Zone C - Salt Lick', lat: 21.7300, lng: 79.3050, zone: 'Core Zone', status: 'online', lastCapture: '3 min ago', imagesProcessed: 203, animalsDetected: 31, battery: 64, signal: 85, installationDate: '2024-01-20', surveyActive: true },
+  { id: 'CT-006', location: 'Buffer Zone North - Forest Edge', lat: 21.7600, lng: 79.3100, zone: 'Buffer Zone', status: 'online', lastCapture: '15 min ago', imagesProcessed: 45, animalsDetected: 5, battery: 91, signal: 78, installationDate: '2024-03-10', surveyActive: true },
+  { id: 'CT-007', location: 'Buffer Zone North - Ridge Path', lat: 21.7650, lng: 79.3250, zone: 'Buffer Zone', status: 'online', lastCapture: '7 min ago', imagesProcessed: 89, animalsDetected: 11, battery: 82, signal: 82, installationDate: '2024-03-10', surveyActive: true },
+  { id: 'CT-008', location: 'Buffer Zone East - Stream Bed', lat: 21.7350, lng: 79.3500, zone: 'Buffer Zone', status: 'online', lastCapture: '20 min ago', imagesProcessed: 112, animalsDetected: 14, battery: 73, signal: 75, installationDate: '2024-04-05', surveyActive: true },
+  { id: 'CT-009', location: 'Buffer Zone South - Meadow', lat: 21.7100, lng: 79.3000, zone: 'Buffer Zone', status: 'online', lastCapture: '4 min ago', imagesProcessed: 78, animalsDetected: 9, battery: 88, signal: 80, installationDate: '2024-04-05', surveyActive: true },
+  { id: 'CT-010', location: 'Buffer Zone West - Old Trail', lat: 21.7250, lng: 79.2800, zone: 'Buffer Zone', status: 'offline', lastCapture: '2 hours ago', imagesProcessed: 34, animalsDetected: 3, battery: 12, signal: 15, installationDate: '2024-04-12', surveyActive: false },
+  { id: 'CT-011', location: 'Boundary Zone A - Village Edge', lat: 21.6950, lng: 79.2650, zone: 'Boundary Zone', status: 'online', lastCapture: '6 min ago', imagesProcessed: 56, animalsDetected: 7, battery: 80, signal: 68, installationDate: '2024-05-01', surveyActive: true },
+  { id: 'CT-012', location: 'Boundary Zone A - Crop Field', lat: 21.6900, lng: 79.2550, zone: 'Boundary Zone', status: 'online', lastCapture: '10 min ago', imagesProcessed: 43, animalsDetected: 4, battery: 76, signal: 62, installationDate: '2024-05-01', surveyActive: true },
+  { id: 'CT-013', location: 'Boundary Zone B - Road Crossing', lat: 21.7700, lng: 79.3500, zone: 'Boundary Zone', status: 'online', lastCapture: '18 min ago', imagesProcessed: 29, animalsDetected: 2, battery: 85, signal: 55, installationDate: '2024-05-15', surveyActive: true },
+  { id: 'CT-014', location: 'Boundary Zone B - Sensitive Corridor', lat: 21.6920, lng: 79.2600, zone: 'Boundary Zone', status: 'online', lastCapture: '1 min ago', imagesProcessed: 167, animalsDetected: 19, battery: 69, signal: 72, installationDate: '2024-05-15', surveyActive: true },
+  { id: 'CT-015', location: 'Core Zone A - Den Site', lat: 21.7400, lng: 79.3180, zone: 'Core Zone', status: 'online', lastCapture: '9 min ago', imagesProcessed: 91, animalsDetected: 15, battery: 83, signal: 93, installationDate: '2024-01-15', surveyActive: true },
+  { id: 'CT-021', location: 'New Deployment - Buffer North', lat: 21.7720, lng: 79.3300, zone: 'Buffer Zone', status: 'online', lastCapture: '12 min ago', imagesProcessed: 12, animalsDetected: 1, battery: 98, signal: 92, installationDate: '2026-08-10', surveyActive: true }, // NEW STATION for Addition 13
 ];
 
-// ── Tiger Profiles ────────────────────────────────────────────
+// ── Enhanced Tiger Profiles ────────────────────────────────────
 export const TIGER_PROFILES = [
   {
     id: 'TGR-01', name: 'Sultan', status: 'active', gender: 'Male', age: '~7 years',
     firstSeen: '12 Mar 2024', lastSeen: '16 Aug 2026, 10:00 AM', lastCamera: 'CT-005',
     zone: 'Core Zone', observationCount: 42, movementStatus: 'Stable in core zone',
-    color: '#f97316',
+    color: '#f97316', typicalIntervalDays: 4,
+    centroid: { lat: 21.7350, lng: 79.3120 },
+    previousCentroid: { lat: 21.7340, lng: 79.3110 },
+    estimatedAreaKm2: 18.5,
+    identificationStatus: 'Confirmed Match',
+    homeRangePoly: [
+      [21.745, 79.300], [21.748, 79.325], [21.725, 79.330], [21.720, 79.305]
+    ],
     timeline: [
       { time: '08:30 AM', camera: 'CT-001', zone: 'Core Zone' },
       { time: '09:00 AM', camera: 'CT-005', zone: 'Core Zone' },
@@ -46,7 +48,14 @@ export const TIGER_PROFILES = [
     id: 'TGR-02', name: 'Shera', status: 'active', gender: 'Male', age: '~5 years',
     firstSeen: '28 Jun 2024', lastSeen: '16 Aug 2026, 10:00 AM', lastCamera: 'CT-009',
     zone: 'Buffer Zone', observationCount: 31, movementStatus: 'Moving toward buffer zone',
-    color: '#eab308',
+    color: '#eab308', typicalIntervalDays: 6,
+    centroid: { lat: 21.7180, lng: 79.2850 },
+    previousCentroid: { lat: 21.7240, lng: 79.2950 },
+    estimatedAreaKm2: 24.2,
+    identificationStatus: 'Confirmed Match',
+    homeRangePoly: [
+      [21.730, 79.275], [21.735, 79.305], [21.705, 79.310], [21.700, 79.270]
+    ],
     timeline: [
       { time: '08:30 AM', camera: 'CT-003', zone: 'Core Zone' },
       { time: '09:00 AM', camera: 'CT-008', zone: 'Buffer Zone' },
@@ -56,21 +65,34 @@ export const TIGER_PROFILES = [
   },
   {
     id: 'TGR-03', name: 'Maya', status: 'active', gender: 'Female', age: '~4 years',
-    firstSeen: '15 Jan 2025', lastSeen: '16 Aug 2026, 10:00 AM', lastCamera: 'CT-003',
-    zone: 'Core Zone', observationCount: 24, movementStatus: 'Stable in core zone',
-    color: '#8b5cf6',
+    firstSeen: '15 Jan 2025', lastSeen: '08 Jul 2026, 09:30 AM', lastCamera: 'CT-003', // 38 days ago for Prolonged Absence demo!
+    zone: 'Core Zone', observationCount: 24, movementStatus: 'Possible prolonged absence ⚠️',
+    color: '#8b5cf6', typicalIntervalDays: 8,
+    centroid: { lat: 21.7520, lng: 79.3450 },
+    previousCentroid: { lat: 21.7520, lng: 79.3450 },
+    estimatedAreaKm2: 12.8,
+    identificationStatus: 'Confirmed Match',
+    homeRangePoly: [
+      [21.760, 79.335], [21.762, 79.355], [21.745, 79.360], [21.740, 79.338]
+    ],
     timeline: [
       { time: '08:30 AM', camera: 'CT-020', zone: 'Core Zone' },
       { time: '09:00 AM', camera: 'CT-004', zone: 'Core Zone' },
       { time: '09:30 AM', camera: 'CT-003', zone: 'Core Zone' },
-      { time: '10:00 AM', camera: 'CT-003', zone: 'Core Zone' },
     ]
   },
   {
     id: 'TGR-07', name: 'Kali', status: 'active', gender: 'Male', age: '~6 years',
     firstSeen: '04 Sep 2023', lastSeen: '16 Aug 2026, 10:42 AM', lastCamera: 'CT-014',
     zone: 'Boundary Zone', observationCount: 27, movementStatus: 'Moving toward boundary ⚠️',
-    color: '#ef4444',
+    color: '#ef4444', typicalIntervalDays: 5,
+    centroid: { lat: 21.6920, lng: 79.2600 },
+    previousCentroid: { lat: 21.7200, lng: 79.3050 }, // 7.2 km shift -> Centroid Shift trigger!
+    estimatedAreaKm2: 32.6,
+    identificationStatus: 'Confirmed Match',
+    homeRangePoly: [
+      [21.725, 79.290], [21.720, 79.310], [21.685, 79.280], [21.680, 79.250]
+    ],
     timeline: [
       { time: '08:12 AM', camera: 'CT-003', zone: 'Core Zone' },
       { time: '09:20 AM', camera: 'CT-008', zone: 'Buffer Zone' },
@@ -80,7 +102,93 @@ export const TIGER_PROFILES = [
   }
 ];
 
-// ── Observations ──────────────────────────────────────────────
+// ── Quarantined Blank Images (Safe Deletion Workflow) ──────────
+export const INITIAL_QUARANTINE = [
+  { id: 'Q-001', fileName: 'CT003_IMG_00812.jpg', cameraId: 'CT-003', timestamp: '16 Aug 2026, 08:15 AM', blankConfidence: 98.4, reason: 'Wind/Vegetation Motion - No Animal Pixels Detected', status: 'quarantined' },
+  { id: 'Q-002', fileName: 'CT009_IMG_00419.jpg', cameraId: 'CT-009', timestamp: '16 Aug 2026, 08:42 AM', blankConfidence: 97.1, reason: 'Shadow/Lighting Change - No Animal Pixels Detected', status: 'quarantined' },
+  { id: 'Q-003', fileName: 'CT014_IMG_00980.jpg', cameraId: 'CT-014', timestamp: '16 Aug 2026, 09:11 AM', blankConfidence: 94.6, reason: 'Rain/Water Spray - No Animal Pixels Detected', status: 'quarantined' },
+  { id: 'Q-004', fileName: 'CT001_IMG_00104.jpg', cameraId: 'CT-001', timestamp: '16 Aug 2026, 09:55 AM', blankConfidence: 96.8, reason: 'Sun Flare - No Animal Pixels Detected', status: 'quarantined' },
+];
+
+// ── Human Review Queue (Ambiguous Identification) ──────────────
+export const INITIAL_HUMAN_REVIEW = [
+  {
+    id: 'REV-001',
+    fileName: 'CT014_IMG_01042.jpg',
+    cameraId: 'CT-014',
+    timestamp: '16 Aug 2026, 10:40 AM',
+    candidate1: { id: 'TGR-07', name: 'Kali', confidence: 72 },
+    candidate2: { id: 'TGR-03', name: 'Maya', confidence: 64 },
+    status: 'pending',
+    notes: 'Partial flank view due to foliage obstruction.'
+  },
+  {
+    id: 'REV-002',
+    fileName: 'CT008_IMG_00331.jpg',
+    cameraId: 'CT-008',
+    timestamp: '16 Aug 2026, 09:15 AM',
+    candidate1: { id: 'TGR-02', name: 'Shera', confidence: 68 },
+    candidate2: { id: 'TGR-01', name: 'Sultan', confidence: 61 },
+    status: 'pending',
+    notes: 'Night flash exposure reflection.'
+  }
+];
+
+// ── Audit Log Initial Records ──────────────────────────────────
+export const INITIAL_AUDIT_LOG = [
+  { id: 'AUD-001', timestamp: '16 Aug 2026, 10:42:01 AM', actor: 'AI Pipeline', type: 'Detection', title: 'Tiger Detected', details: 'CT-014 captured image CT014_IMG_01042.jpg. YOLO Confidence: 94.2%.' },
+  { id: 'AUD-002', timestamp: '16 Aug 2026, 10:42:05 AM', actor: 'Stripe Matching Service', type: 'Identification', title: 'Ambiguous Stripe Match', details: 'Stripe pattern ambiguity between TGR-07 (72%) and TGR-03 (64%). Queued for Human Review.' },
+  { id: 'AUD-003', timestamp: '16 Aug 2026, 10:42:10 AM', actor: 'DeviationEngine', type: 'Alert Trigger', title: 'Boundary Risk Alert Generated', details: 'Alert ALT-001 created. TGR-07 detected in Sensitive Boundary Zone B.' },
+  { id: 'AUD-004', timestamp: '16 Aug 2026, 10:30:00 AM', actor: 'Human Operator', type: 'Quarantine Action', title: 'Confirmed Blank Image Q-002', details: 'Operator confirmed CT009_IMG_00419.jpg as blank. Safe deletion confirmed.' },
+];
+
+// ── Historical Processing Runs (Run Comparison) ───────────────
+export const HISTORICAL_RUNS = [
+  {
+    id: 'RUN-001',
+    date: '01 Aug 2026',
+    imagesProcessed: 1120,
+    blankImages: 810,
+    usefulImages: 310,
+    tigerDetections: 38,
+    occupancySummary: [
+      { tigerId: 'TGR-01', areaKm2: 17.2, centroid: '21.734°N, 79.311°E', status: 'Stable' },
+      { tigerId: 'TGR-02', areaKm2: 21.0, centroid: '21.724°N, 79.295°E', status: 'Stable' },
+      { tigerId: 'TGR-03', areaKm2: 12.8, centroid: '21.752°N, 79.345°E', status: 'Stable' },
+      { tigerId: 'TGR-07', areaKm2: 24.5, centroid: '21.720°N, 79.305°E', status: 'Stable' },
+    ]
+  },
+  {
+    id: 'RUN-002',
+    date: '08 Aug 2026',
+    imagesProcessed: 1240,
+    blankImages: 915,
+    usefulImages: 325,
+    tigerDetections: 41,
+    occupancySummary: [
+      { tigerId: 'TGR-01', areaKm2: 18.0, centroid: '21.734°N, 79.311°E', status: 'Stable' },
+      { tigerId: 'TGR-02', areaKm2: 23.5, centroid: '21.721°N, 79.290°E', status: 'Minor Shift' },
+      { tigerId: 'TGR-03', areaKm2: 12.8, centroid: '21.752°N, 79.345°E', status: 'No Detections' },
+      { tigerId: 'TGR-07', areaKm2: 28.1, centroid: '21.705°N, 79.280°E', status: 'Expanding South' },
+    ]
+  },
+  {
+    id: 'RUN-003',
+    date: '16 Aug 2026 (Current)',
+    imagesProcessed: 1247,
+    blankImages: 920,
+    usefulImages: 327,
+    tigerDetections: 42,
+    occupancySummary: [
+      { tigerId: 'TGR-01', areaKm2: 18.5, centroid: '21.735°N, 79.312°E', status: 'Stable' },
+      { tigerId: 'TGR-02', areaKm2: 24.2, centroid: '21.718°N, 79.285°E', status: 'Buffer Shift' },
+      { tigerId: 'TGR-03', areaKm2: 12.8, centroid: '21.752°N, 79.345°E', status: 'PROLONGED ABSENCE ⚠️' },
+      { tigerId: 'TGR-07', areaKm2: 32.6, centroid: '21.692°N, 79.260°E', status: 'BOUNDARY SHIFT 🚨' },
+    ]
+  }
+];
+
+// ── Initial Observations ──────────────────────────────────────
 export const INITIAL_OBSERVATIONS = [
   { id: 'OBS-001', tigerId: 'TGR-01', cameraId: 'CT-005', timestamp: '16 Aug 2026, 10:00 AM', zone: 'Core Zone', confidence: 96, detectionType: 'Automated', status: 'Confirmed', lat: 21.7350, lng: 79.3120 },
   { id: 'OBS-002', tigerId: 'TGR-02', cameraId: 'CT-009', timestamp: '16 Aug 2026, 10:00 AM', zone: 'Buffer Zone', confidence: 91, detectionType: 'Automated', status: 'Confirmed', lat: 21.7180, lng: 79.2850 },
@@ -92,11 +200,9 @@ export const INITIAL_OBSERVATIONS = [
   { id: 'OBS-008', tigerId: 'TGR-02', cameraId: 'CT-008', timestamp: '16 Aug 2026, 09:00 AM', zone: 'Buffer Zone', confidence: 89, detectionType: 'Automated', status: 'Confirmed', lat: 21.7235, lng: 79.2940 },
   { id: 'OBS-009', tigerId: 'TGR-03', cameraId: 'CT-004', timestamp: '16 Aug 2026, 09:00 AM', zone: 'Core Zone', confidence: 95, detectionType: 'Automated', status: 'Confirmed', lat: 21.7500, lng: 79.3420 },
   { id: 'OBS-010', tigerId: 'TGR-07', cameraId: 'CT-003', timestamp: '16 Aug 2026, 08:12 AM', zone: 'Core Zone', confidence: 90, detectionType: 'Automated', status: 'Confirmed', lat: 21.7200, lng: 79.3050 },
-  { id: 'OBS-011', tigerId: 'TGR-01', cameraId: 'CT-001', timestamp: '15 Aug 2026, 06:45 PM', zone: 'Core Zone', confidence: 94, detectionType: 'Automated', status: 'Confirmed', lat: 21.7310, lng: 79.3080 },
-  { id: 'OBS-012', tigerId: 'TGR-02', cameraId: 'CT-003', timestamp: '15 Aug 2026, 04:20 PM', zone: 'Core Zone', confidence: 87, detectionType: 'Automated', status: 'Confirmed', lat: 21.7260, lng: 79.2980 },
 ];
 
-// ── Alerts ────────────────────────────────────────────────────
+// ── Initial Explainable Alerts ────────────────────────────────
 export const INITIAL_ALERTS = [
   {
     id: 'ALT-001', type: 'Boundary Movement', severity: 'HIGH',
@@ -104,6 +210,14 @@ export const INITIAL_ALERTS = [
     timestamp: '16 Aug 2026, 10:42 AM',
     location: 'Boundary Zone B - Sensitive Corridor',
     description: 'Potential boundary movement detected. Tiger TGR-07 (Kali) observed moving toward sensitive corridor near village area.',
+    whatChanged: 'Activity centroid shifted 7.2 km south toward human settlement boundary.',
+    supportingEvidence: [
+      'Historical Centroid: 21.720°N, 79.305°E',
+      'Current Position: 21.692°N, 79.260°E (CT-014)',
+      'Distance to Village Boundary: 650 meters'
+    ],
+    confidence: 94,
+    surveyEffort: 'Sufficient (CT-014 Active since 2024-05-15)',
     status: 'active',
     lat: 21.6920, lng: 79.2600
   },
@@ -112,39 +226,53 @@ export const INITIAL_ALERTS = [
     tigerId: 'TGR-02', cameraId: 'CT-009',
     timestamp: '16 Aug 2026, 09:30 AM',
     location: 'Buffer Zone South - Meadow',
-    description: 'Tiger TGR-02 (Shera) has moved from Core Zone to Buffer Zone. Monitoring movement pattern.',
+    description: 'Tiger TGR-02 (Shera) has moved from Core Zone to Buffer Zone.',
+    whatChanged: 'Crossed core boundary line into buffer zone.',
+    supportingEvidence: [
+      'Previous Station: CT-003 (Core Zone)',
+      'Current Station: CT-009 (Buffer Zone)',
+      'Centroid Shift: 2.1 km'
+    ],
+    confidence: 91,
+    surveyEffort: 'Sufficient',
     status: 'active',
     lat: 21.7180, lng: 79.2850
   },
   {
-    id: 'ALT-003', type: 'Camera Offline', severity: 'LOW',
-    tigerId: null, cameraId: 'CT-010',
-    timestamp: '16 Aug 2026, 08:15 AM',
-    location: 'Buffer Zone West - Old Trail',
-    description: 'Camera CT-010 has gone offline. Low battery (12%). Signal lost.',
-    status: 'acknowledged',
-    lat: 21.7250, lng: 79.2800
-  },
-  {
-    id: 'ALT-004', type: 'Boundary Proximity', severity: 'HIGH',
-    tigerId: 'TGR-07', cameraId: 'CT-011',
-    timestamp: '16 Aug 2026, 10:20 AM',
-    location: 'Boundary Zone A - Village Edge',
-    description: 'Tiger TGR-07 (Kali) detected near village boundary. Movement trajectory suggests continued boundary approach.',
+    id: 'ALT-003', type: 'Prolonged Absence', severity: 'MEDIUM',
+    tigerId: 'TGR-03', cameraId: 'CT-003',
+    timestamp: '16 Aug 2026, 08:00 AM',
+    location: 'Core Zone B',
+    description: 'Possible prolonged absence detected for Tiger TGR-03 (Maya).',
+    whatChanged: 'No camera sightings logged for 38 consecutive days.',
+    supportingEvidence: [
+      'Typical Sighting Interval: 8 days',
+      'Days Since Last Sighting: 38 days',
+      'Camera Mesh Status: All surrounding cameras (CT-003, CT-004, CT-020) 100% online'
+    ],
+    confidence: 78,
+    surveyEffort: 'Mesh Active — No Hardware Outage',
     status: 'active',
-    lat: 21.7000, lng: 79.2750
-  },
+    lat: 21.7520, lng: 79.3450
+  }
 ];
 
-// ── KPI Data ──────────────────────────────────────────────────
+// ── KPI & Batch Efficiency Data ───────────────────────────────
 export const KPI_DATA = {
   camerasOnline: 18,
   camerasTotal: 20,
-  imagesProcessed: 1240,
-  tigersDetected: 12,
+  imagesProcessed: 1247,
+  blankImages: 920,
+  usefulImages: 327,
+  tigerDetections: 42,
+  otherAnimalDetections: 285,
   individualTigers: 4,
-  activeAlerts: 2,
+  pendingHumanReviews: 2,
+  activeDeviations: 2,
+  activeAlerts: 3,
   highRiskZones: 1,
+  storageSavedGb: 2.4,
+  processingTimeMin: '4m 21s'
 };
 
 // ── Analytics Chart Data ──────────────────────────────────────

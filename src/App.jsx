@@ -3,12 +3,14 @@ import Layout from './components/Layout';
 import { AppProvider } from './context/AppContext';
 
 import Dashboard from './pages/Dashboard';
+import BatchProcessing from './pages/BatchProcessing';
 import CameraTraps from './pages/CameraTraps';
 import AITriage from './pages/AITriage';
 import TigerIntelligence from './pages/TigerIntelligence';
 import LiveMap from './pages/LiveMap';
 import Alerts from './pages/Alerts';
 import Observations from './pages/Observations';
+import AuditLog from './pages/AuditLog';
 import Analytics from './pages/Analytics';
 import SystemHealth from './pages/SystemHealth';
 
@@ -19,6 +21,8 @@ export default function App() {
     switch (activePage) {
       case 'dashboard':
         return <Dashboard />;
+      case 'batch-processing':
+        return <BatchProcessing />;
       case 'camera-traps':
         return <CameraTraps />;
       case 'ai-triage':
@@ -31,6 +35,8 @@ export default function App() {
         return <Alerts />;
       case 'observations':
         return <Observations />;
+      case 'audit-log':
+        return <AuditLog />;
       case 'analytics':
         return <Analytics />;
       case 'system-health':

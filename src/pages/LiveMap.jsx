@@ -1,9 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Polygon, Popup, Tooltip, Marker, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { ANIMALS, SPECIES_LABELS } from '../data/animals';
 import { useSimulationEngine } from '../hooks/useSimulationEngine';
+import { useAppContext } from '../context/AppContext';
 
 // Official Pench Tiger Reserve Boundary Coordinates (Decimal Degrees)
 const CORE_ZONE_COORDS = [
@@ -29,17 +30,6 @@ function createBufferedPolygon(coords, scaleFactor) {
 const BUFFER_ZONE_COORDS = createBufferedPolygon(CORE_ZONE_COORDS, 1.4);
 const TRANSITION_ZONE_COORDS = createBufferedPolygon(CORE_ZONE_COORDS, 1.8);
 
-// ── Speed Classification ──────────────────────────────────────────────────────
-function getSpeedLabel(speed, maxSpeed) {
-  const ratio = speed / maxSpeed;
-  if (ratio < 0.15) return { label: 'Resting', color: '#64748b' };
-  if (ratio < 0.35) return { label: 'Walking', color: '#22c55e' };
-  if (ratio < 0.60) return { label: 'Trotting', color: '#f59e0b' };
-  if (ratio < 0.80) return { label: 'Running', color: '#f97316' };
-  return { label: 'Sprinting', color: '#ef4444' };
-}
-
-// ── Animal Map Marker ─────────────────────────────────────────────────────────
 function AnimalMarkerComponent({ animal, isSelected, onSelect }) {
   const map = useMap();
 
@@ -49,47 +39,25 @@ function AnimalMarkerComponent({ animal, isSelected, onSelect }) {
     }
   }, [isSelected, animal.lat, animal.lng, map]);
 
-  const speedInfo = getSpeedLabel(animal.speed, animal.maxSpeed || 50);
   const ring = isSelected ? `0 0 0 3px ${animal.color}, 0 0 16px ${animal.color}88` : `0 0 8px ${animal.color}66`;
 
   const icon = L.divIcon({
     className: 'animal-marker-leaflet',
     html: `
-      <div style="
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        pointer-events: none;
-      ">
+      <div style="position: relative; display: flex; flex-direction: column; align-items: center; pointer-events: none;">
         <div style="
           background: linear-gradient(135deg, ${animal.color}ee, ${animal.color}99);
-          width: 36px; height: 36px;
-          border-radius: 50%;
+          width: 36px; height: 36px; border-radius: 50%;
           display: flex; align-items: center; justify-content: center;
-          font-size: 20px;
-          border: 2.5px solid rgba(255,255,255,0.85);
-          box-shadow: ${ring};
-          transition: box-shadow 0.3s;
+          font-size: 20px; border: 2.5px solid rgba(255,255,255,0.85);
+          box-shadow: ${ring}; transition: box-shadow 0.3s;
         ">${animal.emoji}</div>
         <div style="
-          background: rgba(10,14,20,0.88);
-          backdrop-filter: blur(6px);
-          border: 1px solid ${animal.color}88;
-          border-radius: 5px;
-          padding: 2px 7px;
-          margin-top: 4px;
-          display: flex; align-items: center; gap: 5px;
-          white-space: nowrap;
+          background: rgba(10,14,20,0.88); backdrop-filter: blur(6px);
+          border: 1px solid ${animal.color}88; border-radius: 5px;
+          padding: 2px 7px; margin-top: 4px; display: flex; align-items: center; gap: 5px; white-space: nowrap;
         ">
-          <span style="font-size:11px; font-weight:700; color:#fff; font-family:monospace;">${animal.name}</span>
-          <span style="
-            font-size:10px; font-weight:600;
-            color:${speedInfo.color};
-            background: ${speedInfo.color}22;
-            border-radius:3px; padding: 1px 4px;
-            font-family:monospace;
-          ">${animal.speed.toFixed(1)} km/h</span>
+          <span style="font-size:11px; font-weight:700; color:#fff; font-family:monospace;">${animal.name} (${animal.id})</span>
         </div>
       </div>
     `,
@@ -106,56 +74,17 @@ function AnimalMarkerComponent({ animal, isSelected, onSelect }) {
     >
       <Popup className="animal-glass-popup">
         <div style={{ padding: '6px', minWidth: '200px' }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '10px',
-            borderBottom: `2px solid ${animal.color}66`, paddingBottom: '8px', marginBottom: '10px'
-          }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: `2px solid ${animal.color}66`, paddingBottom: '8px', marginBottom: '10px' }}>
             <span style={{ fontSize: '28px' }}>{animal.emoji}</span>
             <div>
               <div style={{ fontSize: '15px', fontWeight: '700', color: animal.color }}>{animal.name}</div>
-              <div style={{ fontSize: '11px', color: '#94a3b8' }}>{SPECIES_LABELS[animal.species]} · {animal.id}</div>
+              <div style={{ fontSize: '11px', color: '#94a3b8' }}>Tiger ID: {animal.id}</div>
             </div>
           </div>
-
-          {/* Speed Gauge */}
-          <div style={{ marginBottom: '10px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-              <span style={{ fontSize: '11px', color: '#94a3b8' }}>Speed</span>
-              <span style={{ fontSize: '12px', fontWeight: '700', color: speedInfo.color }}>
-                {animal.speed.toFixed(2)} km/h · {speedInfo.label}
-              </span>
-            </div>
-            <div style={{ background: '#1e293b', borderRadius: '6px', height: '8px', overflow: 'hidden' }}>
-              <div style={{
-                width: `${Math.min(100, (animal.speed / (animal.maxSpeed || 50)) * 100)}%`,
-                height: '100%',
-                background: `linear-gradient(90deg, ${speedInfo.color}99, ${speedInfo.color})`,
-                borderRadius: '6px',
-                transition: 'width 0.5s ease'
-              }} />
-            </div>
-            <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px', textAlign: 'right' }}>
-              Max: {animal.maxSpeed} km/h
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '11px' }}>
-            <div>
-              <div style={{ color: '#64748b' }}>Latitude</div>
-              <div style={{ color: '#e2e8f0', fontWeight: '600', fontFamily: 'monospace' }}>{animal.lat.toFixed(5)}° N</div>
-            </div>
-            <div>
-              <div style={{ color: '#64748b' }}>Longitude</div>
-              <div style={{ color: '#e2e8f0', fontWeight: '600', fontFamily: 'monospace' }}>{animal.lng.toFixed(5)}° E</div>
-            </div>
-            <div>
-              <div style={{ color: '#64748b' }}>Current Zone</div>
-              <div style={{ color: '#e2e8f0', fontWeight: '600' }}>{animal.currentZone}</div>
-            </div>
-            <div>
-              <div style={{ color: '#64748b' }}>Telemetry Pts</div>
-              <div style={{ color: '#e2e8f0', fontWeight: '600' }}>{animal.pathHistory.length} logs</div>
-            </div>
+          <div style={{ fontSize: '11px', color: '#cbd5e1' }}>
+            <div>Lat: <strong>{animal.lat.toFixed(4)}°N</strong></div>
+            <div>Lng: <strong>{animal.lng.toFixed(4)}°E</strong></div>
+            <div>Current Zone: <strong>{animal.currentZone}</strong></div>
           </div>
         </div>
       </Popup>
@@ -163,37 +92,9 @@ function AnimalMarkerComponent({ animal, isSelected, onSelect }) {
   );
 }
 
-// ── Speed Gauge Bar (sidebar) ─────────────────────────────────────────────────
-function SpeedGauge({ speed, maxSpeed, color }) {
-  const pct = Math.min(100, (speed / maxSpeed) * 100);
-  const info = getSpeedLabel(speed, maxSpeed);
-  return (
-    <div style={{ marginTop: '6px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px', fontSize: '10px' }}>
-        <span style={{ color: info.color, fontWeight: '700' }}>{info.label}</span>
-        <span style={{ color: '#94a3b8', fontFamily: 'monospace' }}>{speed.toFixed(2)} / {maxSpeed} km/h</span>
-      </div>
-      <div style={{ background: 'rgba(255,255,255,0.07)', borderRadius: '99px', height: '6px', overflow: 'hidden' }}>
-        <div style={{
-          width: `${pct}%`,
-          height: '100%',
-          background: `linear-gradient(90deg, ${info.color}88, ${info.color})`,
-          borderRadius: '99px',
-          transition: 'width 0.6s cubic-bezier(0.4,0,0.2,1)'
-        }} />
-      </div>
-    </div>
-  );
-}
-
-// ── Species filter pills ──────────────────────────────────────────────────────
-const ALL_SPECIES = ['all', 'tiger', 'elephant', 'leopard', 'deer', 'wild_dog', 'sloth_bear'];
-const SPECIES_EMOJI = {
-  all: '🌿', tiger: '🐅', elephant: '🐘', leopard: '🐆',
-  deer: '🦌', wild_dog: '🐕', sloth_bear: '🐻'
-};
-
 export default function LiveMap() {
+  const { tigerProfiles, runs, cameras } = useAppContext();
+  const [activeTab, setActiveTab] = useState('map'); // 'map' | 'history-runs'
   const initialCenter = [21.73, 79.31];
   const initialZoom = 11;
 
@@ -209,495 +110,248 @@ export default function LiveMap() {
   } = useSimulationEngine(ANIMALS);
 
   const [selectedAnimal, setSelectedAnimal] = useState(ANIMALS[0]);
-  const [speciesFilter, setSpeciesFilter] = useState('all');
-
-  const filteredAnimals = speciesFilter === 'all'
-    ? animals
-    : animals.filter(a => a.species === speciesFilter);
-
-  // Keep selectedAnimal in sync with live data
   const liveSelected = animals.find(a => a.id === selectedAnimal?.id) || animals[0];
 
   return (
     <div className="live-map-container-with-telemetry">
-      {/* ── Simulation Controls Header ── */}
       <div className="sim-controls-header">
         <div className="control-group">
-          <button
-            className={`control-btn btn-start ${isRunning ? 'active' : ''}`}
-            onClick={startSimulation}
-            disabled={isRunning || isLoading}
-            title="Start simulation"
-          >▶ Start</button>
-          <button
-            className="control-btn btn-pause"
-            onClick={stopSimulation}
-            disabled={!isRunning || isLoading}
-            title="Pause simulation"
-          >⏸ Pause</button>
-          <button
-            className="control-btn btn-reset"
-            onClick={resetSimulation}
-            disabled={(!hasMoved && !isRunning) || isLoading}
-            title="Reset to initial positions"
-          >↺ Reset</button>
-          <span className="divider">|</span>
-          <button
-            className="control-btn btn-tick"
-            onClick={stepSingleTick}
-            disabled={isRunning || isLoading}
-            title="Execute single tick"
-          >⟩ Tick</button>
+          <button className={`control-btn btn-start ${isRunning ? 'active' : ''}`} onClick={startSimulation} disabled={isRunning || isLoading}>▶ Start Sim</button>
+          <button className="control-btn btn-pause" onClick={stopSimulation} disabled={!isRunning || isLoading}>⏸ Pause</button>
+          <button className="control-btn btn-reset" onClick={resetSimulation} disabled={(!hasMoved && !isRunning) || isLoading}>↺ Reset</button>
+          <button className="control-btn btn-tick" onClick={stepSingleTick} disabled={isRunning || isLoading}>⟩ Single Tick</button>
         </div>
 
-        {/* Species Filter Pills */}
-        <div className="species-filter-group">
-          {ALL_SPECIES.map(sp => (
-            <button
-              key={sp}
-              className={`species-pill ${speciesFilter === sp ? 'active' : ''}`}
-              onClick={() => setSpeciesFilter(sp)}
-              title={sp === 'all' ? 'All Animals' : SPECIES_LABELS[sp]}
-            >
-              {SPECIES_EMOJI[sp]} {sp === 'all' ? 'All' : SPECIES_LABELS[sp]}
-            </button>
-          ))}
+        <div className="mode-tabs">
+          <button className={`mode-btn ${activeTab === 'map' ? 'active' : ''}`} onClick={() => setActiveTab('map')}>
+            🗺 Occupancy Map & Range Overlap
+          </button>
+          <button className={`mode-btn ${activeTab === 'history-runs' ? 'active' : ''}`} onClick={() => setActiveTab('history-runs')}>
+            📈 Historical Run Comparison ({runs.length} Runs)
+          </button>
         </div>
 
         <div className="status-display">
-          {isRunning && <span className="status-badge running">🔴 LIVE</span>}
-          {!isRunning && <span className="status-badge stopped">⚪ PAUSED</span>}
-          {isLoading && <span className="status-badge loading">⌛ LOADING</span>}
-          <span className="status-badge count">{filteredAnimals.length} animals</span>
+          <span className="status-badge count">{animals.length} Tigers Tracked</span>
+          <span className="status-badge proto">PROTOTYPE GEOSPATIAL MAP</span>
         </div>
       </div>
 
-      <div className="live-map-wrapper">
-        {/* Map Legend Overlay */}
-        <div className="map-legend font-mono">
-          <div className="legend-header">NAGPUR REGION ZONES</div>
-          <div className="legend-items">
-            <div className="legend-item"><span className="dot">🟢</span><span>Core / Protected Area</span></div>
-            <div className="legend-item"><span className="dot">🟡</span><span>Buffer Zone</span></div>
-            <div className="legend-item"><span className="dot">🟠</span><span>Transition Zone</span></div>
+      {activeTab === 'map' && (
+        <div className="live-map-wrapper">
+          {/* Legend Overlay */}
+          <div className="map-legend font-mono">
+            <div className="legend-header">PENCH TIGER RESERVE ZONES</div>
+            <div className="legend-items">
+              <div className="legend-item"><span className="dot">🟢</span><span>Core Zone Boundary</span></div>
+              <div className="legend-item"><span className="dot">🟡</span><span>Buffer Zone</span></div>
+              <div className="legend-item"><span className="dot">🔴</span><span>Sensitive Boundary Zone</span></div>
+            </div>
+            <div className="overlap-warning-box">
+              ⚠️ <strong>Territorial Overlap Detected:</strong> TGR-01 & TGR-02 ranges overlap in Buffer Zone (Centroid distance: 3.4 km).
+            </div>
           </div>
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', marginTop: '8px', paddingTop: '8px' }}>
-            <div className="legend-header" style={{ marginBottom: '4px' }}>SPEED STATES</div>
-            {[
-              { label: 'Resting', color: '#64748b' },
-              { label: 'Walking', color: '#22c55e' },
-              { label: 'Trotting', color: '#f59e0b' },
-              { label: 'Running', color: '#f97316' },
-              { label: 'Sprinting', color: '#ef4444' },
-            ].map(s => (
-              <div key={s.label} className="legend-item" style={{ marginBottom: '2px' }}>
-                <span style={{ width: 10, height: 10, borderRadius: '50%', background: s.color, display: 'inline-block' }} />
-                <span style={{ fontSize: '11px' }}>{s.label}</span>
+
+          <MapContainer center={initialCenter} zoom={initialZoom} scrollWheelZoom={true} className="leaflet-map-frame">
+            <TileLayer attribution='&copy; OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+
+            {/* Zone Polygons */}
+            <Polygon positions={TRANSITION_ZONE_COORDS} pathOptions={{ color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.08, weight: 2, dashArray: '5, 5' }}>
+              <Tooltip sticky>Sensitive Boundary Zone</Tooltip>
+            </Polygon>
+            <Polygon positions={BUFFER_ZONE_COORDS} pathOptions={{ color: '#eab308', fillColor: '#eab308', fillOpacity: 0.15, weight: 2, dashArray: '4, 4' }}>
+              <Tooltip sticky>Buffer Zone</Tooltip>
+            </Polygon>
+            <Polygon positions={CORE_ZONE_COORDS} pathOptions={{ color: '#10b981', fillColor: '#10b981', fillOpacity: 0.25, weight: 2.5 }}>
+              <Tooltip sticky>Pench Core Protected Area</Tooltip>
+            </Polygon>
+
+            {/* Addition 10: Tiger Home Range Polygons & Centroid Markers */}
+            {tigerProfiles.map(tiger => (
+              <React.Fragment key={`hr-${tiger.id}`}>
+                {tiger.homeRangePoly && (
+                  <Polygon
+                    positions={tiger.homeRangePoly}
+                    pathOptions={{ color: tiger.color, fillColor: tiger.color, fillOpacity: 0.18, weight: 2, dashArray: '6, 6' }}
+                  >
+                    <Tooltip sticky>Home Range: {tiger.name} ({tiger.id}) — Est: {tiger.estimatedAreaKm2} km²</Tooltip>
+                  </Polygon>
+                )}
+                {/* Centroid Marker */}
+                {tiger.centroid && (
+                  <Marker
+                    position={[tiger.centroid.lat, tiger.centroid.lng]}
+                    icon={L.divIcon({
+                      className: 'centroid-icon',
+                      html: `<div style="background:${tiger.color}; width:12px; height:12px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 8px ${tiger.color};"></div>`,
+                      iconSize: [12, 12]
+                    })}
+                  >
+                    <Tooltip>Activity Centroid: {tiger.name} ({tiger.centroid.lat.toFixed(3)}°N)</Tooltip>
+                  </Marker>
+                )}
+              </React.Fragment>
+            ))}
+
+            {/* Camera Station Markers */}
+            {cameras.map(cam => (
+              <Marker
+                key={cam.id}
+                position={[cam.lat, cam.lng]}
+                icon={L.divIcon({
+                  className: 'cam-marker',
+                  html: `<div style="background:${cam.status === 'online' ? '#10b981' : '#ef4444'}; color:#fff; font-size:9px; font-weight:700; padding:1px 4px; border-radius:3px; border:1px solid #000;">📷 ${cam.id}</div>`,
+                  iconSize: [40, 16]
+                })}
+              >
+                <Popup>Station {cam.id} ({cam.location}) — Installed: {cam.installationDate}</Popup>
+              </Marker>
+            ))}
+
+            {/* Tigers */}
+            {animals.map((animal) => (
+              <React.Fragment key={animal.id}>
+                {animal.pathHistory.length > 1 && (
+                  <Polyline positions={animal.pathHistory.map(p => [p.lat, p.lng])} pathOptions={{ color: animal.color, weight: 3, opacity: 0.8 }} />
+                )}
+                <AnimalMarkerComponent animal={animal} isSelected={liveSelected?.id === animal.id} onSelect={setSelectedAnimal} />
+              </React.Fragment>
+            ))}
+          </MapContainer>
+
+          {/* Telemetry Sidebar */}
+          <div className="telemetry-sidebar">
+            <div className="sidebar-header">
+              <h3 className="sidebar-title">🐅 Occupancy & Centroids</h3>
+            </div>
+            {tigerProfiles.map(tiger => (
+              <div key={tiger.id} className="occupancy-side-card" style={{ borderLeftColor: tiger.color }} onClick={() => {
+                const anim = animals.find(a => a.id === tiger.id);
+                if (anim) setSelectedAnimal(anim);
+              }}>
+                <div className="occ-header">
+                  <span className="occ-name">{tiger.name} ({tiger.id})</span>
+                  <span className="occ-area font-mono" style={{ color: tiger.color }}>{tiger.estimatedAreaKm2} km²</span>
+                </div>
+                <div className="occ-meta font-mono">
+                  <div>Centroid: {tiger.centroid?.lat.toFixed(3)}°N, {tiger.centroid?.lng.toFixed(3)}°E</div>
+                  <div>Zone: {tiger.zone}</div>
+                </div>
               </div>
             ))}
           </div>
         </div>
+      )}
 
-        {/* Interactive Leaflet Map */}
-        <MapContainer
-          center={initialCenter}
-          zoom={initialZoom}
-          scrollWheelZoom={true}
-          className="leaflet-map-frame"
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-
-          {/* Zone Polygons */}
-          <Polygon positions={TRANSITION_ZONE_COORDS} pathOptions={{ color: '#f97316', fillColor: '#f97316', fillOpacity: 0.12, weight: 2, dashArray: '5, 5' }}>
-            <Tooltip sticky>Transition Zone</Tooltip>
-          </Polygon>
-          <Polygon positions={BUFFER_ZONE_COORDS} pathOptions={{ color: '#eab308', fillColor: '#eab308', fillOpacity: 0.20, weight: 2, dashArray: '4, 4' }}>
-            <Tooltip sticky>Buffer Zone</Tooltip>
-          </Polygon>
-          <Polygon positions={CORE_ZONE_COORDS} pathOptions={{ color: '#10b981', fillColor: '#10b981', fillOpacity: 0.35, weight: 2.5 }}>
-            <Tooltip sticky>Core / Protected Area</Tooltip>
-          </Polygon>
-
-          {/* Animal Paths & Markers */}
-          {filteredAnimals.map((animal) => (
-            <React.Fragment key={animal.id}>
-              {animal.pathHistory.length > 1 && (
-                <Polyline
-                  positions={animal.pathHistory.map(p => [p.lat, p.lng])}
-                  pathOptions={{ color: animal.color, weight: 2, opacity: 0.45, dashArray: '3, 4' }}
-                />
-              )}
-              <AnimalMarkerComponent
-                animal={animal}
-                isSelected={liveSelected?.id === animal.id}
-                onSelect={setSelectedAnimal}
-              />
-            </React.Fragment>
-          ))}
-        </MapContainer>
-
-        {/* ── Telemetry Sidebar ── */}
-        <div className="telemetry-sidebar">
-          <div className="sidebar-header">
-            <h3 className="sidebar-title">🌿 Wildlife Telemetry</h3>
-            <span className="live-indicator">
-              <span className="pulse-dot"></span> LIVE
-            </span>
+      {/* Addition 11: HISTORICAL RUN COMPARISON */}
+      {activeTab === 'history-runs' && (
+        <div className="runs-container">
+          <div className="runs-header-card">
+            <h3>📈 Historical Survey Run Comparison</h3>
+            <p>Compares tiger home range occupancy, centroid shifts, and camera station capture frequency across consecutive survey runs.</p>
           </div>
-          <p className="sidebar-subtitle">Umred-Karhandla Wildlife Sanctuary</p>
 
-          {/* Selected Animal Speed Panel */}
-          {liveSelected && (
-            <div className="selected-animal-panel" style={{ borderColor: liveSelected.color }}>
-              <div className="selected-animal-header">
-                <span style={{ fontSize: '24px' }}>{liveSelected.emoji}</span>
-                <div>
-                  <div style={{ fontSize: '14px', fontWeight: '700', color: liveSelected.color }}>{liveSelected.name}</div>
-                  <div style={{ fontSize: '11px', color: '#64748b' }}>{SPECIES_LABELS[liveSelected.species]}</div>
+          <div className="runs-grid">
+            {runs.map(run => (
+              <div key={run.id} className="run-card">
+                <div className="run-card-header">
+                  <span className="run-id font-mono">{run.id}</span>
+                  <span className="run-date">{run.date}</span>
                 </div>
-                <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                  <div style={{
-                    fontSize: '18px', fontWeight: '800', fontFamily: 'monospace',
-                    color: getSpeedLabel(liveSelected.speed, liveSelected.maxSpeed).color
-                  }}>
-                    {liveSelected.speed.toFixed(2)}
-                  </div>
-                  <div style={{ fontSize: '10px', color: '#64748b' }}>km/h</div>
+
+                <div className="run-kpis">
+                  <div>Images: <strong>{run.imagesProcessed}</strong></div>
+                  <div>Blanks: <strong>{run.blankImages}</strong></div>
+                  <div>Useful: <strong className="green">{run.usefulImages}</strong></div>
+                  <div>Tigers: <strong className="orange">{run.tigerDetections}</strong></div>
+                </div>
+
+                <div className="run-occupancy-table-wrapper">
+                  <table className="run-table">
+                    <thead>
+                      <tr>
+                        <th>Tiger ID</th>
+                        <th>Occupancy</th>
+                        <th>Centroid</th>
+                        <th>Status Trend</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {run.occupancySummary.map((occ, i) => (
+                        <tr key={i}>
+                          <td className="font-mono">{occ.tigerId}</td>
+                          <td className="font-mono">{occ.areaKm2} km²</td>
+                          <td className="font-mono">{occ.centroid}</td>
+                          <td>
+                            <span className={`trend-pill ${occ.status.toLowerCase().includes('shift') || occ.status.toLowerCase().includes('absence') ? 'warn' : 'stable'}`}>
+                              {occ.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-              <SpeedGauge speed={liveSelected.speed} maxSpeed={liveSelected.maxSpeed} color={liveSelected.color} />
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginTop: '8px', fontSize: '10px' }}>
-                <div style={{ color: '#64748b' }}>Lat: <span style={{ color: '#e2e8f0', fontFamily: 'monospace' }}>{liveSelected.lat.toFixed(5)}°</span></div>
-                <div style={{ color: '#64748b' }}>Lng: <span style={{ color: '#e2e8f0', fontFamily: 'monospace' }}>{liveSelected.lng.toFixed(5)}°</span></div>
-                <div style={{ color: '#64748b', gridColumn: '1/-1' }}>Zone: <span style={{ color: '#e2e8f0' }}>{liveSelected.currentZone}</span></div>
-              </div>
-            </div>
-          )}
-
-          {/* All animals list */}
-          <div className="animal-list">
-            {filteredAnimals.map((animal) => {
-              const isSelected = liveSelected?.id === animal.id;
-              const speedInfo = getSpeedLabel(animal.speed, animal.maxSpeed);
-              return (
-                <div
-                  key={animal.id}
-                  className={`animal-card ${isSelected ? 'selected' : ''}`}
-                  style={{ borderLeftColor: animal.color }}
-                  onClick={() => setSelectedAnimal(animal)}
-                >
-                  <div className="card-header">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontSize: '16px' }}>{animal.emoji}</span>
-                      <div>
-                        <div className="animal-name">{animal.name}</div>
-                        <div style={{ fontSize: '10px', color: '#64748b' }}>{SPECIES_LABELS[animal.species]}</div>
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '13px', fontWeight: '800', color: speedInfo.color, fontFamily: 'monospace' }}>
-                        {animal.speed.toFixed(1)}<span style={{ fontSize: '9px', fontWeight: '400' }}> km/h</span>
-                      </div>
-                      <div style={{
-                        fontSize: '9px', color: speedInfo.color,
-                        background: `${speedInfo.color}22`, padding: '1px 5px',
-                        borderRadius: '3px', fontWeight: '600'
-                      }}>
-                        {speedInfo.label}
-                      </div>
-                    </div>
-                  </div>
-                  <SpeedGauge speed={animal.speed} maxSpeed={animal.maxSpeed} color={animal.color} />
-                  <div className="animal-stats" style={{ marginTop: '6px' }}>
-                    <div className="stat">
-                      <span className="label">Lat:</span>
-                      <span className="value">{animal.lat.toFixed(4)}°</span>
-                    </div>
-                    <div className="stat">
-                      <span className="label">Lng:</span>
-                      <span className="value">{animal.lng.toFixed(4)}°</span>
-                    </div>
-                    <div className="stat" style={{ gridColumn: '1/-1' }}>
-                      <span className="label">Zone:</span>
-                      <span className="value">{animal.currentZone}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            ))}
           </div>
         </div>
-      </div>
+      )}
 
       <style>{`
-        .live-map-container-with-telemetry {
-          position: relative;
-          width: 100%;
-          height: 100%;
-          min-height: calc(100vh - 60px);
-          overflow: hidden;
-          background-color: var(--bg-dark, #0e141b);
-          display: flex;
-          flex-direction: column;
-        }
+        .live-map-container-with-telemetry { position: relative; width: 100%; height: 100%; min-height: calc(100vh - 60px); overflow: hidden; background: #0e141b; display: flex; flex-direction: column; }
+        .sim-controls-header { background: rgba(14,20,27,0.97); border-bottom: 1px solid rgba(255,255,255,0.07); padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; z-index: 100; }
+        .control-group { display: flex; gap: 6px; }
+        .control-btn { padding: 4px 10px; background: rgba(79,172,254,0.08); border: 1px solid rgba(79,172,254,0.25); color: #4facfe; font-size: 11px; border-radius: 4px; cursor: pointer; }
+        .control-btn.active { background: #4facfe; color: #000; font-weight: 700; }
 
-        .sim-controls-header {
-          background-color: rgba(14, 20, 27, 0.97);
-          backdrop-filter: blur(8px);
-          border-bottom: 1px solid rgba(255,255,255,0.07);
-          padding: 10px 16px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 12px;
-          z-index: 100;
-          flex-wrap: wrap;
-        }
+        .mode-tabs { display: flex; gap: 6px; }
+        .mode-btn { padding: 4px 12px; border-radius: 4px; border: 1px solid var(--border-subtle); background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 11px; cursor: pointer; font-weight: 600; }
+        .mode-btn.active { background: rgba(16,185,129,0.15); border-color: #10b981; color: #34d399; }
 
-        .control-group {
-          display: flex;
-          gap: 6px;
-          align-items: center;
-        }
+        .status-display { display: flex; gap: 6px; }
+        .status-badge { padding: 3px 8px; font-size: 10px; font-weight: 700; border-radius: 4px; }
+        .status-badge.count { background: rgba(255,255,255,0.06); color: #94a3b8; }
+        .status-badge.proto { background: rgba(245,158,11,0.15); color: #fbbf24; }
 
-        .control-btn {
-          padding: 5px 12px;
-          background-color: rgba(79, 172, 254, 0.08);
-          border: 1px solid rgba(79, 172, 254, 0.25);
-          color: #4facfe;
-          font-size: 12px;
-          font-weight: 500;
-          border-radius: 5px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .control-btn:hover:not(:disabled) {
-          background-color: rgba(79, 172, 254, 0.18);
-          border-color: rgba(79, 172, 254, 0.5);
-        }
-        .control-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-        .control-btn.active { background-color: #4facfe; color: #0e141b; }
+        .live-map-wrapper { display: flex; flex: 1; height: calc(100vh - 120px); overflow: hidden; position: relative; }
+        .leaflet-map-frame { width: 100%; height: 100%; z-index: 1; }
 
-        .divider { color: rgba(255,255,255,0.15); margin: 0 2px; }
+        .map-legend { position: absolute; top: 14px; left: 14px; z-index: 1000; background: rgba(10,15,22,0.92); border: 1px solid rgba(255,255,255,0.09); border-radius: 8px; padding: 10px; min-width: 200px; }
+        .legend-header { font-size: 10px; color: #64748b; font-weight: 700; margin-bottom: 4px; }
+        .legend-items { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: #cbd5e1; }
+        .overlap-warning-box { margin-top: 8px; padding: 6px; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 4px; font-size: 10px; color: #fbbf24; }
 
-        /* Species Filter Pills */
-        .species-filter-group {
-          display: flex;
-          gap: 5px;
-          flex-wrap: wrap;
-          align-items: center;
-        }
-        .species-pill {
-          padding: 4px 10px;
-          background: rgba(255,255,255,0.04);
-          border: 1px solid rgba(255,255,255,0.1);
-          color: #94a3b8;
-          border-radius: 99px;
-          font-size: 11px;
-          cursor: pointer;
-          transition: all 0.2s;
-          white-space: nowrap;
-        }
-        .species-pill:hover {
-          background: rgba(255,255,255,0.09);
-          color: #e2e8f0;
-        }
-        .species-pill.active {
-          background: rgba(79,172,254,0.18);
-          border-color: #4facfe88;
-          color: #4facfe;
-          font-weight: 600;
-        }
+        .telemetry-sidebar { width: 280px; background: rgba(10,15,22,0.97); border-left: 1px solid rgba(255,255,255,0.07); padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; z-index: 50; }
+        .sidebar-title { font-size: 13px; color: #e2e8f0; margin: 0; }
+        .occupancy-side-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-left: 3px solid; border-radius: 6px; padding: 8px; cursor: pointer; }
+        .occ-header { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--text-bright); }
+        .occ-meta { font-size: 10px; color: var(--text-dim); margin-top: 4px; }
 
-        .status-display {
-          display: flex;
-          gap: 6px;
-          align-items: center;
-        }
-        .status-badge {
-          padding: 3px 9px;
-          font-size: 11px;
-          font-weight: 600;
-          border-radius: 4px;
-          letter-spacing: 0.4px;
-        }
-        .status-badge.running { background: rgba(34,197,94,0.15); color: #22c55e; }
-        .status-badge.stopped { background: rgba(107,114,128,0.15); color: #9ca3af; }
-        .status-badge.loading { background: rgba(59,130,246,0.15); color: #3b82f6; }
-        .status-badge.count   { background: rgba(255,255,255,0.06); color: #94a3b8; }
+        /* Historical Runs */
+        .runs-container { padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+        .runs-header-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 16px; }
+        .runs-header-card h3 { margin: 0 0 4px 0; font-size: 16px; color: var(--text-bright); }
+        .runs-header-card p { margin: 0; font-size: 12px; color: var(--text-dim); }
 
-        .live-map-wrapper {
-          display: flex;
-          flex: 1;
-          height: calc(100vh - 140px);
-          overflow: hidden;
-          position: relative;
-        }
+        .runs-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .run-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+        .run-card-header { display: flex; justify-content: space-between; font-size: 13px; }
+        .run-id { font-weight: 700; color: #10b981; }
+        .run-date { color: var(--text-dim); }
 
-        .leaflet-map-frame {
-          width: 100%;
-          height: 100%;
-          z-index: 1;
-        }
+        .run-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 11px; background: rgba(255,255,255,0.02); padding: 8px; border-radius: 6px; }
+        .green { color: #10b981; } .orange { color: #f97316; }
 
-        .map-legend {
-          position: absolute;
-          top: 14px;
-          left: 14px;
-          z-index: 1000;
-          background: rgba(10, 15, 22, 0.92);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255,255,255,0.09);
-          border-radius: 10px;
-          padding: 12px 14px;
-          box-shadow: 0 6px 24px rgba(0,0,0,0.5);
-          user-select: none;
-          min-width: 160px;
-        }
-        .legend-header {
-          font-size: 10px;
-          font-weight: 700;
-          color: #64748b;
-          letter-spacing: 0.8px;
-          margin-bottom: 6px;
-        }
-        .legend-items { display: flex; flex-direction: column; gap: 5px; }
-        .legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #cbd5e1; }
-        .dot { font-size: 11px; }
+        .run-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        .run-table th, .run-table td { padding: 6px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .run-table th { color: var(--text-dim); }
 
-        /* Telemetry Sidebar */
-        .telemetry-sidebar {
-          width: 310px;
-          min-width: 280px;
-          background-color: rgba(10, 15, 22, 0.97);
-          backdrop-filter: blur(10px);
-          border-left: 1px solid rgba(255,255,255,0.07);
-          overflow-y: auto;
-          padding: 14px;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          z-index: 50;
-        }
+        .trend-pill { font-size: 9px; font-weight: 700; padding: 2px 4px; border-radius: 3px; }
+        .trend-pill.stable { background: rgba(16,185,129,0.15); color: #34d399; }
+        .trend-pill.warn { background: rgba(239,68,68,0.15); color: #f87171; }
 
-        .sidebar-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .sidebar-title {
-          font-size: 14px;
-          font-weight: 700;
-          color: #e2e8f0;
-          margin: 0;
-        }
-        .live-indicator {
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          font-size: 11px;
-          font-weight: 700;
-          color: #22c55e;
-        }
-        .pulse-dot {
-          width: 7px; height: 7px;
-          background: #22c55e;
-          border-radius: 50%;
-          animation: blink 1.4s infinite;
-        }
-        @keyframes blink {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.4; transform: scale(0.8); }
-        }
-        .sidebar-subtitle {
-          font-size: 10px;
-          color: #475569;
-          margin: 0;
-          padding-top: 4px;
-          border-top: 1px solid rgba(255,255,255,0.06);
-        }
-
-        /* Selected animal panel */
-        .selected-animal-panel {
-          background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(255,255,255,0.1);
-          border-left: 3px solid;
-          border-radius: 8px;
-          padding: 12px;
-        }
-        .selected-animal-header {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          margin-bottom: 8px;
-        }
-
-        /* Animal list */
-        .animal-list {
-          display: flex;
-          flex-direction: column;
-          gap: 7px;
-          flex: 1;
-          overflow-y: auto;
-        }
-
-        .animal-card {
-          padding: 10px;
-          background: rgba(255,255,255,0.025);
-          border: 1px solid rgba(255,255,255,0.07);
-          border-left: 3px solid;
-          border-radius: 7px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .animal-card:hover {
-          background: rgba(255,255,255,0.055);
-          border-color: rgba(255,255,255,0.14);
-        }
-        .animal-card.selected {
-          background: rgba(79,172,254,0.08);
-          box-shadow: 0 0 0 1px rgba(79,172,254,0.25);
-        }
-
-        .card-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 2px;
-        }
-        .animal-name {
-          font-size: 13px;
-          font-weight: 600;
-          color: #e2e8f0;
-        }
-        .animal-stats {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 4px;
-          font-size: 10px;
-        }
-        .stat { display: flex; justify-content: space-between; align-items: center; }
-        .stat .label { color: #475569; }
-        .stat .value { color: #94a3b8; font-weight: 500; font-family: monospace; }
-
-        /* Leaflet popup overrides */
-        .animal-glass-popup .leaflet-popup-content-wrapper {
-          background: rgba(10, 15, 22, 0.97) !important;
-          backdrop-filter: blur(16px);
-          border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 12px;
-          box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-          color: #e2e8f0;
-        }
-        .animal-glass-popup .leaflet-popup-tip {
-          background: rgba(10, 15, 22, 0.97) !important;
-        }
-        .animal-glass-popup .leaflet-popup-content {
-          margin: 0;
-        }
+        @media (max-width: 900px) { .runs-grid { grid-template-columns: 1fr; } }
       `}</style>
     </div>
   );

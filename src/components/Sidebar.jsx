@@ -3,12 +3,14 @@ import React from 'react';
 export default function Sidebar({ activePage, setActivePage }) {
   const menuItems = [
     { id: 'dashboard', label: '📊 Dashboard' },
+    { id: 'batch-processing', label: '📁 Batch Processing' },
     { id: 'camera-traps', label: '📷 Camera Traps' },
     { id: 'ai-triage', label: '🔬 AI Triage' },
-    { id: 'tiger-intelligence', label: '🐅 Tiger Intelligence' },
-    { id: 'movement-map', label: '🗺 Movement Map' },
-    { id: 'alerts', label: '🚨 Alerts' },
+    { id: 'tiger-intelligence', label: '🐅 Individual Tigers' },
+    { id: 'movement-map', label: '🗺 Movement Intelligence' },
     { id: 'observations', label: '📋 Observations' },
+    { id: 'alerts', label: '🚨 Alerts' },
+    { id: 'audit-log', label: '📜 Audit Log' },
     { id: 'analytics', label: '📈 Analytics' },
     { id: 'system-health', label: '⚙ System Health' }
   ];

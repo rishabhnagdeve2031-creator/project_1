@@ -1,8 +1,9 @@
 import React from 'react';
 import { useAppContext } from '../context/AppContext';
+import { ExportService } from '../services/ExportService';
 
 export default function Dashboard() {
-  const { kpi, alerts, observations, cameras, tigerProfiles } = useAppContext();
+  const { kpi, alerts, observations, cameras, tigerProfiles, runFullDemoWorkflow } = useAppContext();
 
   const activeAlerts = alerts.filter(a => a.status === 'active');
   const recentObs = observations.slice(0, 5);
@@ -10,27 +11,48 @@ export default function Dashboard() {
 
   return (
     <div className="pg-page">
-      {/* Prototype Banner */}
-      <div className="proto-banner">
-        <span className="proto-badge">PROTOTYPE DATA</span>
-        <span>PenchGuard AI — Pench Tiger Reserve Demo Dashboard</span>
+      {/* Addition 18: ENHANCED RUN FULL DEMO BANNER */}
+      <div className="full-demo-banner">
+        <div className="banner-info">
+          <span className="proto-badge">DEMO MODE ACTIVE</span>
+          <span className="banner-title">PenchGuard AI — Complete 12-Step Triage & Movement Intelligence Prototype</span>
+        </div>
+        <button className="run-full-demo-btn" onClick={runFullDemoWorkflow}>
+          🚀 Run Full 12-Step Demo Pipeline
+        </button>
       </div>
 
-      {/* KPI Row */}
+      {/* Addition 19: EXPANDED KPI ROW */}
       <div className="kpi-row">
         <KPICard icon="📷" label="Cameras Online" value={`${kpi.camerasOnline} / ${kpi.camerasTotal}`} accent="#10b981" />
         <KPICard icon="🖼" label="Images Processed" value={kpi.imagesProcessed.toLocaleString()} accent="#3b82f6" />
-        <KPICard icon="🐅" label="Tigers Detected" value={kpi.tigersDetected} accent="#f97316" />
+        <KPICard icon="🍃" label="Blank Quarantined" value={kpi.blankImages} accent="#9ca3af" />
+        <KPICard icon="✅" label="Useful Wildlife Images" value={kpi.usefulImages} accent="#10b981" />
+        <KPICard icon="🐅" label="Tiger Sightings" value={kpi.tigerDetections} accent="#f97316" />
         <KPICard icon="🔍" label="Individual Tigers" value={kpi.individualTigers} accent="#8b5cf6" />
+        <KPICard icon="👁" label="Pending Human Review" value={kpi.pendingHumanReviews} accent="#fbbf24" />
         <KPICard icon="🚨" label="Active Alerts" value={kpi.activeAlerts} accent={kpi.activeAlerts > 0 ? '#ef4444' : '#10b981'} />
-        <KPICard icon="⚠" label="High-Risk Zones" value={kpi.highRiskZones} accent="#f59e0b" />
+      </div>
+
+      {/* Addition 20: EXPORT TOOLBAR */}
+      <div className="export-toolbar">
+        <span className="exp-label">📥 Forest Department Export Tools:</span>
+        <button className="exp-btn" onClick={() => ExportService.exportObservationsCSV(observations)}>
+          📄 Export Observations (CSV)
+        </button>
+        <button className="exp-btn" onClick={() => ExportService.exportTigerDatabaseJSON(tigerProfiles)}>
+          📄 Export Tiger Catalogue (JSON)
+        </button>
+        <button className="exp-btn" onClick={() => ExportService.exportAlertsCSV(alerts)}>
+          📄 Export Alerts Log (CSV)
+        </button>
       </div>
 
       <div className="dash-grid">
         {/* Live Camera Activity */}
         <div className="dash-card span-2">
           <div className="card-title-row">
-            <h3>📷 Live Camera Activity</h3>
+            <h3>📷 Live Camera Station Network</h3>
             <span className="card-badge">{onlineCameras.length} Online</span>
           </div>
           <div className="camera-mini-grid">
@@ -82,21 +104,20 @@ export default function Dashboard() {
         {/* Recent Alerts */}
         <div className="dash-card">
           <div className="card-title-row">
-            <h3>🚨 Active Alerts</h3>
+            <h3>🚨 Active Explainable Alerts</h3>
             <span className="card-badge alert-badge">{activeAlerts.length} Active</span>
           </div>
           <div className="alert-list">
             {activeAlerts.length === 0 && <div className="empty-state">No active alerts</div>}
-            {activeAlerts.slice(0, 4).map(alert => (
+            {activeAlerts.slice(0, 3).map(alert => (
               <div key={alert.id} className={`alert-item severity-${alert.severity.toLowerCase()}`}>
                 <div className="alert-sev-badge">{alert.severity}</div>
                 <div className="alert-body">
                   <div className="alert-type">{alert.type}</div>
-                  <div className="alert-desc">{alert.description.slice(0, 80)}...</div>
+                  <div className="alert-desc">{alert.description.slice(0, 70)}...</div>
                   <div className="alert-meta">
                     {alert.tigerId && <span>Tiger: {alert.tigerId}</span>}
                     <span>Camera: {alert.cameraId}</span>
-                    <span>{alert.timestamp}</span>
                   </div>
                 </div>
               </div>
@@ -104,11 +125,11 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Tiger Overview */}
-        <div className="dash-card">
+        {/* Individual Tigers */}
+        <div className="dash-card span-2">
           <div className="card-title-row">
-            <h3>🔍 Individual Tigers Identified</h3>
-            <span className="card-badge">{tigerProfiles.length} Tigers</span>
+            <h3>🔍 Persistent Individual Tiger Database</h3>
+            <span className="card-badge">{tigerProfiles.length} Enrolled Tigers</span>
           </div>
           <div className="tiger-overview-list">
             {tigerProfiles.map(t => (
@@ -119,10 +140,10 @@ export default function Dashboard() {
                     <div className="tov-name">{t.name}</div>
                     <div className="tov-id">{t.id} · {t.gender}</div>
                   </div>
-                  <div className="tov-zone">{t.zone}</div>
+                  <div className="tov-zone">{t.zone} · <strong className="green font-mono">{t.estimatedAreaKm2} km²</strong></div>
                 </div>
                 <div className="tov-meta">
-                  <span>📷 {t.lastCamera}</span>
+                  <span>📷 Station: {t.lastCamera}</span>
                   <span>📊 {t.observationCount} obs</span>
                   <span className={t.movementStatus.includes('boundary') ? 'tov-warn' : ''}>{t.movementStatus}</span>
                 </div>
@@ -133,126 +154,57 @@ export default function Dashboard() {
       </div>
 
       <style>{`
-        .pg-page {
-          padding: 20px 24px;
-          overflow-y: auto;
-          height: 100%;
-        }
+        .pg-page { padding: 20px 24px; overflow-y: auto; height: 100%; }
 
-        .proto-banner {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 8px 14px;
-          background: rgba(245, 158, 11, 0.08);
-          border: 1px solid rgba(245, 158, 11, 0.25);
-          border-radius: 8px;
-          font-size: 12px;
-          color: #fbbf24;
-          margin-bottom: 20px;
+        .full-demo-banner {
+          display: flex; justify-content: space-between; align-items: center;
+          padding: 12px 18px; background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(5,150,105,0.2));
+          border: 1px solid rgba(16,185,129,0.4); border-radius: 10px; margin-bottom: 20px;
         }
-        .proto-badge {
-          background: rgba(245, 158, 11, 0.2);
-          padding: 2px 8px;
-          border-radius: 4px;
-          font-weight: 700;
-          font-size: 10px;
-          letter-spacing: 0.5px;
+        .banner-info { display: flex; align-items: center; gap: 12px; }
+        .proto-badge { background: rgba(245, 158, 11, 0.2); color: #fbbf24; padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 10px; }
+        .banner-title { font-size: 13px; font-weight: 700; color: var(--text-bright); }
+        .run-full-demo-btn {
+          padding: 8px 16px; background: linear-gradient(135deg, #10b981, #059669);
+          border: none; border-radius: 6px; color: #fff; font-size: 12px; font-weight: 700;
+          cursor: pointer; box-shadow: 0 4px 12px rgba(16,185,129,0.3); transition: transform 0.1s;
         }
+        .run-full-demo-btn:hover { transform: translateY(-1px); }
 
-        .kpi-row {
-          display: grid;
-          grid-template-columns: repeat(6, 1fr);
-          gap: 14px;
-          margin-bottom: 20px;
-        }
-
+        .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 16px; }
         .kpi-card {
-          background: var(--bg-card);
-          border: 1px solid var(--border-subtle);
-          border-radius: 10px;
-          padding: 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          transition: all 0.2s;
+          background: var(--bg-card); border: 1px solid var(--border-subtle);
+          border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 6px;
         }
-        .kpi-card:hover {
-          border-color: rgba(255,255,255,0.12);
-          box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-        }
-        .kpi-icon { font-size: 22px; }
-        .kpi-value {
-          font-size: 26px;
-          font-weight: 800;
-          font-family: var(--font-mono);
-          letter-spacing: -0.5px;
-        }
-        .kpi-label {
-          font-size: 11px;
-          color: var(--text-dim);
-          font-weight: 500;
-          letter-spacing: 0.3px;
-        }
+        .kpi-icon { font-size: 20px; }
+        .kpi-value { font-size: 22px; font-weight: 800; font-family: var(--font-mono); }
+        .kpi-label { font-size: 10px; color: var(--text-dim); font-weight: 500; }
 
-        .dash-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 16px;
+        .export-toolbar {
+          display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+          background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 8px; margin-bottom: 20px;
         }
+        .exp-label { font-size: 11px; color: var(--text-dim); font-weight: 600; }
+        .exp-btn {
+          padding: 4px 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+          color: var(--text-main); font-size: 11px; border-radius: 4px; cursor: pointer; transition: background 0.2s;
+        }
+        .exp-btn:hover { background: rgba(255,255,255,0.08); }
 
-        .dash-card {
-          background: var(--bg-card);
-          border: 1px solid var(--border-subtle);
-          border-radius: 10px;
-          padding: 18px;
-        }
+        .dash-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .dash-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 18px; }
         .dash-card.span-2 { grid-column: span 2; }
 
-        .card-title-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 14px;
-        }
-        .card-title-row h3 {
-          font-size: 14px;
-          font-weight: 600;
-          color: var(--text-bright);
-          margin: 0;
-        }
-        .card-badge {
-          font-size: 11px;
-          padding: 3px 10px;
-          border-radius: 20px;
-          background: rgba(16, 185, 129, 0.12);
-          color: #34d399;
-          font-weight: 600;
-        }
-        .alert-badge {
-          background: rgba(239, 68, 68, 0.12);
-          color: #f87171;
-        }
+        .card-title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .card-title-row h3 { font-size: 14px; font-weight: 600; color: var(--text-bright); margin: 0; }
+        .card-badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; background: rgba(16,185,129,0.12); color: #34d399; font-weight: 600; }
+        .alert-badge { background: rgba(239,68,68,0.12); color: #f87171; }
 
-        /* Camera mini grid */
-        .camera-mini-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 10px;
-        }
-        .cam-mini-card {
-          background: rgba(255,255,255,0.02);
-          border: 1px solid rgba(255,255,255,0.06);
-          border-radius: 8px;
-          padding: 10px;
-          transition: all 0.2s;
-        }
-        .cam-mini-card:hover { border-color: rgba(255,255,255,0.12); }
-        .cam-mini-card.offline { opacity: 0.5; }
+        .camera-mini-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .cam-mini-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 10px; }
         .cam-mini-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
-        .status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-        .status-dot.online { background: #10b981; box-shadow: 0 0 6px #10b98188; }
-        .status-dot.offline { background: #ef4444; }
+        .status-dot { width: 7px; height: 7px; border-radius: 50%; }
+        .status-dot.online { background: #10b981; } .status-dot.offline { background: #ef4444; }
         .cam-mini-id { font-size: 12px; font-weight: 700; color: var(--text-bright); font-family: var(--font-mono); }
         .cam-status-tag { font-size: 9px; font-weight: 600; padding: 1px 5px; border-radius: 3px; margin-left: auto; }
         .cam-status-tag.online { background: rgba(16,185,129,0.15); color: #34d399; }
@@ -260,14 +212,8 @@ export default function Dashboard() {
         .cam-mini-loc { font-size: 10px; color: var(--text-dim); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .cam-mini-meta { font-size: 10px; color: var(--text-muted); display: flex; gap: 8px; }
 
-        /* Detection list */
         .detection-list { display: flex; flex-direction: column; gap: 8px; }
-        .detection-item {
-          background: rgba(255,255,255,0.02);
-          border: 1px solid rgba(255,255,255,0.06);
-          border-radius: 8px;
-          padding: 10px;
-        }
+        .detection-item { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 10px; }
         .det-header { display: flex; align-items: center; gap: 10px; }
         .det-emoji { font-size: 22px; }
         .det-tiger { font-size: 13px; font-weight: 600; color: var(--text-bright); }
@@ -277,43 +223,20 @@ export default function Dashboard() {
         .conf-label { font-size: 9px; color: var(--text-dim); }
         .det-time { font-size: 10px; color: var(--text-dim); margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.05); }
 
-        /* Alert list */
         .alert-list { display: flex; flex-direction: column; gap: 8px; }
         .empty-state { font-size: 13px; color: var(--text-dim); text-align: center; padding: 20px; }
-        .alert-item {
-          display: flex;
-          gap: 10px;
-          padding: 10px;
-          background: rgba(255,255,255,0.02);
-          border: 1px solid rgba(255,255,255,0.06);
-          border-radius: 8px;
-        }
-        .alert-sev-badge {
-          font-size: 10px;
-          font-weight: 700;
-          padding: 4px 8px;
-          border-radius: 4px;
-          letter-spacing: 0.5px;
-          white-space: nowrap;
-          height: fit-content;
-        }
+        .alert-item { display: flex; gap: 10px; padding: 10px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; }
+        .alert-sev-badge { font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 4px; height: fit-content; }
         .severity-high .alert-sev-badge { background: rgba(239,68,68,0.15); color: #f87171; }
         .severity-medium .alert-sev-badge { background: rgba(245,158,11,0.15); color: #fbbf24; }
         .severity-low .alert-sev-badge { background: rgba(59,130,246,0.15); color: #60a5fa; }
-        .alert-body { flex: 1; min-width: 0; }
+        .alert-body { flex: 1; }
         .alert-type { font-size: 12px; font-weight: 600; color: var(--text-bright); margin-bottom: 2px; }
         .alert-desc { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
-        .alert-meta { font-size: 10px; color: var(--text-dim); display: flex; gap: 10px; flex-wrap: wrap; }
+        .alert-meta { font-size: 10px; color: var(--text-dim); display: flex; gap: 10px; }
 
-        /* Tiger overview */
-        .tiger-overview-list { display: flex; flex-direction: column; gap: 8px; }
-        .tiger-overview-item {
-          padding: 10px;
-          background: rgba(255,255,255,0.02);
-          border: 1px solid rgba(255,255,255,0.06);
-          border-left: 3px solid;
-          border-radius: 8px;
-        }
+        .tiger-overview-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .tiger-overview-item { padding: 10px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-left: 3px solid; border-radius: 8px; }
         .tov-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
         .tov-emoji { font-size: 20px; }
         .tov-name { font-size: 13px; font-weight: 600; color: var(--text-bright); }
@@ -321,17 +244,13 @@ export default function Dashboard() {
         .tov-zone { margin-left: auto; font-size: 11px; color: var(--text-muted); }
         .tov-meta { font-size: 10px; color: var(--text-dim); display: flex; gap: 10px; flex-wrap: wrap; }
         .tov-warn { color: #f87171; font-weight: 600; }
+        .green { color: #10b981; }
 
         @media (max-width: 1200px) {
-          .kpi-row { grid-template-columns: repeat(3, 1fr); }
-          .dash-grid { grid-template-columns: 1fr 1fr; }
-          .dash-card.span-2 { grid-column: span 2; }
-          .camera-mini-grid { grid-template-columns: repeat(2, 1fr); }
-        }
-        @media (max-width: 768px) {
           .kpi-row { grid-template-columns: repeat(2, 1fr); }
           .dash-grid { grid-template-columns: 1fr; }
           .dash-card.span-2 { grid-column: span 1; }
+          .tiger-overview-list { grid-template-columns: 1fr; }
         }
       `}</style>
     </div>
