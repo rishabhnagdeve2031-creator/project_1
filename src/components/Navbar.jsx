@@ -1,6 +1,9 @@
 import React from 'react';
+import { useAppContext } from '../context/AppContext';
 
 export default function Navbar() {
+  const { appMode, toggleAppMode, isRealMode, backendStatus } = useAppContext();
+
   return (
     <header className="navbar">
       <div className="navbar-brand">
@@ -9,14 +12,31 @@ export default function Navbar() {
         </div>
         <div className="brand-title-group">
           <h1 className="brand-title">PenchGuard AI</h1>
-          <span className="brand-subtitle font-mono">AUTOMATED CAMERA TRAP & TIGER MOVEMENT INTELLIGENCE · PROTOTYPE</span>
+          <span className="brand-subtitle font-mono">AUTOMATED CAMERA TRAP & TIGER MOVEMENT INTELLIGENCE</span>
         </div>
       </div>
 
       <div className="navbar-actions">
-        <div className="system-status-pill font-mono">
-          <span className="pulse-dot"></span>
-          <span className="status-text">SYSTEM ONLINE</span>
+        {/* Mode Selector Toggle Pill */}
+        <button
+          className={`mode-toggle-pill ${isRealMode ? 'mode-real' : 'mode-demo'}`}
+          onClick={toggleAppMode}
+          title="Click to switch between Real Data Mode and Demo Mode"
+        >
+          <span className="mode-dot"></span>
+          <span className="mode-label font-mono">
+            {isRealMode ? '🟢 REAL DATA MODE (PRIMARY)' : '🟡 DEMO MODE (PRESENTATION)'}
+          </span>
+        </button>
+
+        {/* Real Backend Connection Status */}
+        <div className={`backend-status-chip ${backendStatus.connected ? 'online' : 'warning'}`}>
+          <span className="status-dot"></span>
+          <span className="status-text font-mono">
+            {backendStatus.connected
+              ? `YOLO ONLINE (${backendStatus.model_path?.split('\\').pop().split('/').pop() || 'best.pt'})`
+              : 'YOLO BACKEND OFFLINE'}
+          </span>
         </div>
       </div>
 
@@ -80,29 +100,77 @@ export default function Navbar() {
         .navbar-actions {
           display: flex;
           align-items: center;
-          gap: 14px;
+          gap: 12px;
         }
 
-        .system-status-pill {
+        .mode-toggle-pill {
           display: flex;
           align-items: center;
           gap: 8px;
           padding: 6px 14px;
           border-radius: 20px;
-          background: rgba(16, 185, 129, 0.08);
-          border: 1px solid rgba(16, 185, 129, 0.3);
+          cursor: pointer;
+          transition: all 0.2s;
           font-size: 11px;
-          font-weight: 600;
-          color: var(--forest-green-light);
-          letter-spacing: 0.5px;
-          box-shadow: 0 0 12px rgba(16, 185, 129, 0.1);
+          font-weight: 700;
+          border: 1px solid;
         }
 
-        .status-text {
-          color: var(--forest-green-light);
+        .mode-toggle-pill.mode-real {
+          background: rgba(16, 185, 129, 0.15);
+          border-color: rgba(16, 185, 129, 0.5);
+          color: #34d399;
+          box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+        }
+
+        .mode-toggle-pill.mode-demo {
+          background: rgba(245, 158, 11, 0.15);
+          border-color: rgba(245, 158, 11, 0.5);
+          color: #fbbf24;
+          box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
+        }
+
+        .mode-toggle-pill:hover {
+          transform: translateY(-1px);
+        }
+
+        .mode-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: currentColor;
+          box-shadow: 0 0 8px currentColor;
+        }
+
+        .backend-status-chip {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 5px 10px;
+          border-radius: 6px;
+          font-size: 10px;
+          font-weight: 600;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .backend-status-chip.online {
+          border-color: rgba(16, 185, 129, 0.3);
+          color: #10b981;
+        }
+
+        .backend-status-chip.warning {
+          border-color: rgba(239, 68, 68, 0.3);
+          color: #f87171;
+        }
+
+        .backend-status-chip .status-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: currentColor;
         }
       `}</style>
     </header>
   );
 }
-

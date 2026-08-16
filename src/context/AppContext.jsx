@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import {
   INITIAL_OBSERVATIONS,
   INITIAL_ALERTS,
@@ -11,34 +11,103 @@ import {
   HISTORICAL_RUNS
 } from '../data/demoData';
 import { DeviationEngine } from '../services/DeviationEngine';
+import { YoloDetectionService } from '../services/YoloDetectionService';
 
 const AppContext = createContext(null);
 
 export function AppProvider({ children }) {
-  const [observations, setObservations] = useState(INITIAL_OBSERVATIONS);
-  const [alerts, setAlerts] = useState(INITIAL_ALERTS);
-  const [cameras, setCameras] = useState(CAMERAS);
-  const [tigerProfiles, setTigerProfiles] = useState(TIGER_PROFILES);
-  const [quarantine, setQuarantine] = useState(INITIAL_QUARANTINE);
-  const [humanReview, setHumanReview] = useState(INITIAL_HUMAN_REVIEW);
-  const [auditLog, setAuditLog] = useState(INITIAL_AUDIT_LOG);
-  const [runs] = useState(HISTORICAL_RUNS);
-  const [kpi, setKpi] = useState(KPI_DATA);
+  // Mode: 'real' (Default) or 'demo'
+  const [appMode, setAppMode] = useState('real');
+  const [backendStatus, setBackendStatus] = useState({ connected: false, message: 'Checking backend...' });
+
+  // ── REAL DATA STORE (Starts clean, no fake names) ─────────────
+  const [realObservations, setRealObservations] = useState([]);
+  const [realTigers, setRealTigers] = useState([]);
+  const [realCameras, setRealCameras] = useState([]);
+  const [realQuarantine, setRealQuarantine] = useState([]);
+  const [realHumanReview, setRealHumanReview] = useState([]);
+  const [realAlerts, setRealAlerts] = useState([]);
+  const [realAuditLog, setRealAuditLog] = useState([
+    {
+      id: 'AUD-R001',
+      timestamp: new Date().toLocaleTimeString(),
+      actor: 'System Initialization',
+      type: 'Mode Status',
+      title: 'REAL DATA MODE Active',
+      details: 'System initialized in REAL DATA MODE. No fake/demo tiger records active.'
+    }
+  ]);
+  const [realKpi, setRealKpi] = useState({
+    camerasOnline: 0,
+    camerasTotal: 0,
+    imagesProcessed: 0,
+    blankImages: 0,
+    usefulImages: 0,
+    tigerDetections: 0,
+    otherAnimalDetections: 0,
+    individualTigers: 0,
+    pendingHumanReviews: 0,
+    activeDeviations: 0,
+    activeAlerts: 0,
+    storageSavedGb: 0.0,
+    processingTimeMin: '0s'
+  });
+
+  // ── DEMO DATA STORE (Fallback for presentations) ────────────
+  const [demoObservations, setDemoObservations] = useState(INITIAL_OBSERVATIONS);
+  const [demoTigers, setDemoTigers] = useState(TIGER_PROFILES);
+  const [demoCameras] = useState(CAMERAS);
+  const [demoQuarantine, setDemoQuarantine] = useState(INITIAL_QUARANTINE);
+  const [demoHumanReview, setDemoHumanReview] = useState(INITIAL_HUMAN_REVIEW);
+  const [demoAlerts, setDemoAlerts] = useState(INITIAL_ALERTS);
+  const [demoAuditLog, setDemoAuditLog] = useState(INITIAL_AUDIT_LOG);
+  const [demoKpi] = useState(KPI_DATA);
 
   const [deviationEngine] = useState(new DeviationEngine({ coreThresholdKm: 15, bufferThresholdKm: 5 }));
+
+  // Check Python YOLO Backend Status on load & periodically
+  useEffect(() => {
+    async function fetchStatus() {
+      const status = await YoloDetectionService.checkBackendStatus();
+      setBackendStatus(status);
+    }
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Mode Switcher
+  const toggleAppMode = useCallback(() => {
+    setAppMode(prev => (prev === 'real' ? 'demo' : 'real'));
+  }, []);
+
+  // Active Store Selectors
+  const isRealMode = appMode === 'real';
+  const observations = isRealMode ? realObservations : demoObservations;
+  const tigerProfiles = isRealMode ? realTigers : demoTigers;
+  const cameras = isRealMode ? realCameras : demoCameras;
+  const quarantine = isRealMode ? realQuarantine : demoQuarantine;
+  const humanReview = isRealMode ? realHumanReview : demoHumanReview;
+  const alerts = isRealMode ? realAlerts : demoAlerts;
+  const auditLog = isRealMode ? realAuditLog : demoAuditLog;
+  const kpi = isRealMode ? realKpi : demoKpi;
 
   // Audit Logger helper
   const addAuditEntry = useCallback((actor, type, title, details) => {
     const entry = {
-      id: `AUD-${String(auditLog.length + 1).padStart(3, '0')}`,
+      id: `AUD-${String((isRealMode ? realAuditLog.length : demoAuditLog.length) + 1).padStart(3, '0')}`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
       actor,
       type,
       title,
       details,
     };
-    setAuditLog(prev => [entry, ...prev]);
-  }, [auditLog.length]);
+    if (isRealMode) {
+      setRealAuditLog(prev => [entry, ...prev]);
+    } else {
+      setDemoAuditLog(prev => [entry, ...prev]);
+    }
+  }, [isRealMode, realAuditLog.length, demoAuditLog.length]);
 
   // Observations
   const addObservation = useCallback((obs) => {
@@ -46,42 +115,63 @@ export function AppProvider({ children }) {
       id: `OBS-${String(observations.length + 1).padStart(3, '0')}`,
       ...obs,
       status: 'Confirmed',
-      detectionType: 'Automated AI Detection',
+      detectionType: 'Real YOLO Inference',
     };
-    setObservations(prev => [newObs, ...prev]);
-    setKpi(prev => ({
-      ...prev,
-      imagesProcessed: prev.imagesProcessed + 1,
-      tigerDetections: prev.tigerDetections + 1,
-      usefulImages: prev.usefulImages + 1
-    }));
-    addAuditEntry('AI System', 'Observation Logged', `Observation ${newObs.id} created`, `Tiger ${newObs.tigerId} at ${newObs.cameraId}`);
+
+    if (isRealMode) {
+      setRealObservations(prev => [newObs, ...prev]);
+      setRealKpi(prev => ({
+        ...prev,
+        imagesProcessed: prev.imagesProcessed + 1,
+        tigerDetections: prev.tigerDetections + 1,
+        usefulImages: prev.usefulImages + 1
+      }));
+    } else {
+      setDemoObservations(prev => [newObs, ...prev]);
+    }
+
+    addAuditEntry('YOLO Inference', 'Real Observation Logged', `Observation ${newObs.id} created`, `File: ${newObs.fileName || 'Image'} at ${newObs.cameraId}`);
     return newObs;
-  }, [observations.length, addAuditEntry]);
+  }, [isRealMode, observations.length, addAuditEntry]);
 
   // Quarantine Safe Actions
   const confirmBlankQuarantine = useCallback((id) => {
-    setQuarantine(prev => prev.map(q => q.id === id ? { ...q, status: 'confirmed_blank' } : q));
-    addAuditEntry('Human Operator', 'Quarantine Confirmed', `Blank image ${id} confirmed`, 'Safe deletion approved for storage optimization');
-  }, [addAuditEntry]);
+    if (isRealMode) {
+      setRealQuarantine(prev => prev.map(q => q.id === id ? { ...q, status: 'confirmed_blank' } : q));
+    } else {
+      setDemoQuarantine(prev => prev.map(q => q.id === id ? { ...q, status: 'confirmed_blank' } : q));
+    }
+    addAuditEntry('Human Operator', 'Quarantine Confirmed', `Blank image ${id} confirmed`, 'Safe deletion approved');
+  }, [isRealMode, addAuditEntry]);
 
   const restoreFromQuarantine = useCallback((id) => {
-    setQuarantine(prev => prev.map(q => q.id === id ? { ...q, status: 'restored' } : q));
-    addAuditEntry('Human Operator', 'Quarantine Restored', `Image ${id} restored`, 'Image restored to active triage pipeline');
-  }, [addAuditEntry]);
+    if (isRealMode) {
+      setRealQuarantine(prev => prev.map(q => q.id === id ? { ...q, status: 'restored' } : q));
+    } else {
+      setDemoQuarantine(prev => prev.map(q => q.id === id ? { ...q, status: 'restored' } : q));
+    }
+    addAuditEntry('Human Operator', 'Quarantine Restored', `Image ${id} restored`, 'Image restored to active stream');
+  }, [isRealMode, addAuditEntry]);
 
   // Human Review Actions
   const confirmHumanReviewMatch = useCallback((reviewId, confirmedTigerId) => {
-    setHumanReview(prev => prev.map(r => r.id === reviewId ? { ...r, status: 'confirmed' } : r));
-    setKpi(prev => ({ ...prev, pendingHumanReviews: Math.max(0, prev.pendingHumanReviews - 1) }));
+    if (isRealMode) {
+      setRealHumanReview(prev => prev.map(r => r.id === reviewId ? { ...r, status: 'confirmed' } : r));
+      setRealKpi(prev => ({ ...prev, pendingHumanReviews: Math.max(0, prev.pendingHumanReviews - 1) }));
+    } else {
+      setDemoHumanReview(prev => prev.map(r => r.id === reviewId ? { ...r, status: 'confirmed' } : r));
+    }
     addAuditEntry('Human Operator', 'Identification Confirmed', `Review ${reviewId} resolved`, `Matched to individual ${confirmedTigerId}`);
-  }, [addAuditEntry]);
+  }, [isRealMode, addAuditEntry]);
 
+  // Real Tiger Enrollment (Addition 10: Sequential TGR-001, TGR-002, TGR-003)
   const enrollNewTiger = useCallback((newTigerData) => {
-    const tigerId = `TGR-${String(tigerProfiles.length + 1).padStart(2, '0')}`;
+    const list = isRealMode ? realTigers : demoTigers;
+    const tigerId = `TGR-${String(list.length + 1).padStart(3, '0')}`;
+
     const newTiger = {
       id: tigerId,
-      name: newTigerData.name || `Tiger ${tigerId}`,
+      name: newTigerData.name || `Individual ${tigerId}`,
       status: 'active',
       gender: newTigerData.gender || 'Unknown',
       age: newTigerData.age || '~3 years',
@@ -96,15 +186,20 @@ export function AppProvider({ children }) {
       centroid: { lat: newTigerData.lat || 21.73, lng: newTigerData.lng || 79.31 },
       previousCentroid: null,
       estimatedAreaKm2: 5.0,
-      identificationStatus: 'Enrolled Individual',
+      identificationStatus: 'Confirmed Match',
       timeline: [{ time: 'Just now', camera: newTigerData.cameraId || 'CT-001', zone: newTigerData.zone || 'Core Zone' }]
     };
 
-    setTigerProfiles(prev => [...prev, newTiger]);
-    setKpi(prev => ({ ...prev, individualTigers: prev.individualTigers + 1 }));
-    addAuditEntry('Human Operator', 'New Tiger Enrollment', `New Tiger Enrolled: ${tigerId}`, `Name: ${newTiger.name}`);
+    if (isRealMode) {
+      setRealTigers(prev => [...prev, newTiger]);
+      setRealKpi(prev => ({ ...prev, individualTigers: prev.individualTigers + 1 }));
+    } else {
+      setDemoTigers(prev => [...prev, newTiger]);
+    }
+
+    addAuditEntry('Human Operator', 'Real Tiger Enrollment', `New Tiger Enrolled: ${tigerId}`, `Sequential Individual: ${newTiger.name}`);
     return newTiger;
-  }, [tigerProfiles.length, addAuditEntry]);
+  }, [isRealMode, realTigers, demoTigers, addAuditEntry]);
 
   // Alerts
   const addAlert = useCallback((alertData) => {
@@ -113,66 +208,63 @@ export function AppProvider({ children }) {
       ...alertData,
       status: 'active',
     };
-    setAlerts(prev => [newAlert, ...prev]);
-    setKpi(prev => ({ ...prev, activeAlerts: prev.activeAlerts + 1 }));
+    if (isRealMode) {
+      setRealAlerts(prev => [newAlert, ...prev]);
+      setRealKpi(prev => ({ ...prev, activeAlerts: prev.activeAlerts + 1 }));
+    } else {
+      setDemoAlerts(prev => [newAlert, ...prev]);
+    }
     addAuditEntry('DeviationEngine', 'Alert Generated', `Alert ${newAlert.id}: ${newAlert.type}`, newAlert.description);
     return newAlert;
-  }, [alerts.length, addAuditEntry]);
+  }, [isRealMode, alerts.length, addAuditEntry]);
 
   const acknowledgeAlert = useCallback((alertId) => {
-    setAlerts(prev => prev.map(a => a.id === alertId ? { ...a, status: 'acknowledged' } : a));
+    if (isRealMode) {
+      setRealAlerts(prev => prev.map(a => a.id === alertId ? { ...a, status: 'acknowledged' } : a));
+    } else {
+      setDemoAlerts(prev => prev.map(a => a.id === alertId ? { ...a, status: 'acknowledged' } : a));
+    }
     addAuditEntry('Human Operator', 'Alert Acknowledged', `Alert ${alertId} acknowledged`, 'Operator inspecting evidence');
-  }, [addAuditEntry]);
+  }, [isRealMode, addAuditEntry]);
 
   const resolveAlert = useCallback((alertId) => {
-    setAlerts(prev => prev.map(a => a.id === alertId ? { ...a, status: 'resolved' } : a));
-    setKpi(prev => ({ ...prev, activeAlerts: Math.max(0, prev.activeAlerts - 1) }));
+    if (isRealMode) {
+      setRealAlerts(prev => prev.map(a => a.id === alertId ? { ...a, status: 'resolved' } : a));
+      setRealKpi(prev => ({ ...prev, activeAlerts: Math.max(0, prev.activeAlerts - 1) }));
+    } else {
+      setDemoAlerts(prev => prev.map(a => a.id === alertId ? { ...a, status: 'resolved' } : a));
+    }
     addAuditEntry('Human Operator', 'Alert Resolved', `Alert ${alertId} resolved`, 'Mitigation action logged');
-  }, [addAuditEntry]);
+  }, [isRealMode, addAuditEntry]);
 
-  // 12-Step Full Demo Workflow Trigger
-  const runFullDemoWorkflow = useCallback(() => {
-    // 1. Log demo trigger
-    addAuditEntry('Demo Runner', 'Full Demo Executed', 'Complete Pipeline Demonstration Triggered', 'Executing 12-stage camera trap triage pipeline');
+  // Batch Processing State Update helper
+  const recordRealBatchStats = useCallback((batchStats) => {
+    setRealKpi(prev => ({
+      ...prev,
+      imagesProcessed: prev.imagesProcessed + batchStats.processed,
+      blankImages: prev.blankImages + batchStats.blank,
+      usefulImages: prev.usefulImages + batchStats.useful,
+      tigerDetections: prev.tigerDetections + batchStats.tiger,
+      otherAnimalDetections: prev.otherAnimalDetections + batchStats.other,
+      storageSavedGb: parseFloat((prev.storageSavedGb + batchStats.storageSavedGb).toFixed(2)),
+      processingTimeMin: batchStats.timeStr
+    }));
 
-    // 2. Add an observation
-    const demoObs = addObservation({
-      tigerId: 'TGR-07',
-      cameraId: 'CT-014',
-      timestamp: new Date().toLocaleString(),
-      zone: 'Boundary Zone',
-      confidence: 95,
-      lat: 21.6920,
-      lng: 79.2600
-    });
-
-    // 3. Run DeviationEngine
-    const kali = tigerProfiles.find(t => t.id === 'TGR-07') || tigerProfiles[0];
-    const deviations = deviationEngine.analyzeTigerMovement(kali, demoObs, runs, cameras);
-
-    // 4. Generate Alert if deviations found
-    deviations.forEach(dev => {
-      addAlert({
-        type: dev.type,
-        severity: dev.severity,
-        tigerId: 'TGR-07',
-        cameraId: 'CT-014',
-        timestamp: new Date().toLocaleString(),
-        location: 'Boundary Zone B - Sensitive Corridor',
-        description: dev.whatChanged,
-        whatChanged: dev.whatChanged,
-        supportingEvidence: dev.evidence,
-        confidence: dev.confidence,
-        surveyEffort: dev.surveyEffort,
-        lat: 21.6920,
-        lng: 79.2600
+    if (batchStats.quarantinedItems && batchStats.quarantinedItems.length > 0) {
+      setRealQuarantine(prev => [...batchStats.quarantinedItems, ...prev]);
+    }
+    if (batchStats.camerasFound && batchStats.camerasFound.length > 0) {
+      setRealCameras(prev => {
+        const existingIds = new Set(prev.map(c => c.id));
+        const newCams = batchStats.camerasFound.filter(c => !existingIds.has(c.id));
+        return [...prev, ...newCams];
       });
-    });
-
-    alert('✅ Full Demo Pipeline Completed Successfully!\n- Processed sample images\n- Filtered blanks\n- Detected Tiger TGR-07\n- Executed DeviationEngine (Survey Effort Aware)\n- Generated Explainable Alert\n- Appended trace to Audit Log');
-  }, [addAuditEntry, addObservation, addAlert, tigerProfiles, deviationEngine, runs, cameras]);
+    }
+  }, []);
 
   const value = {
+    appMode, toggleAppMode, isRealMode,
+    backendStatus,
     observations, addObservation,
     alerts, addAlert, acknowledgeAlert, resolveAlert,
     cameras,
@@ -180,10 +272,10 @@ export function AppProvider({ children }) {
     quarantine, confirmBlankQuarantine, restoreFromQuarantine,
     humanReview, confirmHumanReviewMatch,
     auditLog, addAuditEntry,
-    runs,
-    kpi, setKpi,
+    runs: HISTORICAL_RUNS,
+    kpi, setRealKpi,
     deviationEngine,
-    runFullDemoWorkflow
+    recordRealBatchStats
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
