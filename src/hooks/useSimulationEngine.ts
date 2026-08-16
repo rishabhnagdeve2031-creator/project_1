@@ -1,20 +1,20 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import type { Tiger } from '../data/tigers';
+import type { Animal } from '../data/animals';
 import { SimulationEngine } from '../simulation/SimulationEngine';
 import { TelemetryService } from '../services/TelemetryService';
 
-export function useSimulationEngine(initialTigers: Tiger[]) {
+export function useSimulationEngine(initialAnimals: Animal[]) {
   // Store initial reference for reset comparison
-  const initialTigersRef = useRef<Tiger[]>(initialTigers);
+  const initialAnimalsRef = useRef<Animal[]>(initialAnimals);
   const engineRef = useRef<SimulationEngine | null>(null);
 
   if (!engineRef.current) {
-    const engine = new SimulationEngine(initialTigers);
+    const engine = new SimulationEngine(initialAnimals);
     engineRef.current = engine;
     TelemetryService.getInstance().setProvider(engine);
   }
 
-  const [tigers, setTigers] = useState<Tiger[]>(() => engineRef.current!.getTigers());
+  const [tigers, setAnimals] = useState<Animal[]>(() => engineRef.current!.getAnimals());
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -24,7 +24,7 @@ export function useSimulationEngine(initialTigers: Tiger[]) {
 
     // Subscribe to engine tick state changes
     const unsubscribe = engine.subscribe(() => {
-      setTigers(engine.getTigers());
+      setAnimals(engine.getAnimals());
       setIsRunning(engine.getIsRunning());
     });
 
@@ -58,7 +58,7 @@ export function useSimulationEngine(initialTigers: Tiger[]) {
     // Brief smooth loading transition for UI feedback
     setTimeout(() => {
       if (engineRef.current) {
-        engineRef.current.reset(initialTigersRef.current);
+        engineRef.current.reset(initialAnimalsRef.current);
       }
       setIsLoading(false);
     }, 400);
@@ -72,19 +72,20 @@ export function useSimulationEngine(initialTigers: Tiger[]) {
 
   // Check if simulation state has deviated from initial coordinates
   const hasMoved = useMemo(() => {
-    if (tigers.length !== initialTigersRef.current.length) return true;
-    return tigers.some((tiger, i) => {
-      const init = initialTigersRef.current[i];
+    const animals = tigers;
+    if (animals.length !== initialAnimalsRef.current.length) return true;
+    return animals.some((animal, i) => {
+      const init = initialAnimalsRef.current[i];
       return (
-        Math.abs(tiger.lat - init.lat) > 0.00001 ||
-        Math.abs(tiger.lng - init.lng) > 0.00001 ||
-        tiger.pathHistory.length !== init.pathHistory.length
+        Math.abs(animal.lat - init.lat) > 0.00001 ||
+        Math.abs(animal.lng - init.lng) > 0.00001 ||
+        animal.pathHistory.length !== init.pathHistory.length
       );
     });
   }, [tigers]);
 
   return {
-    tigers,
+    tigers, // keep name 'tigers' for backwards-compat with LiveMap
     isRunning,
     isLoading,
     hasMoved,

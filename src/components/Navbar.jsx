@@ -8,8 +8,8 @@ export default function Navbar() {
           <span className="wildlife-emoji" role="img" aria-label="wildlife">🐾</span>
         </div>
         <div className="brand-title-group">
-          <h1 className="brand-title">Wildlife Sentinel</h1>
-          <span className="brand-subtitle font-mono">EARLY WARNING & GEOFENCING SYSTEM</span>
+          <h1 className="brand-title">PenchGuard AI</h1>
+          <span className="brand-subtitle font-mono">AUTOMATED CAMERA TRAP & TIGER MOVEMENT INTELLIGENCE · PROTOTYPE</span>
         </div>
       </div>
 

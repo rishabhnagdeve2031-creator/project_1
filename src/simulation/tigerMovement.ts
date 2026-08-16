@@ -1,76 +1,86 @@
-import type { Tiger, PathPoint } from '../data/tigers';
+import type { Animal, PathPoint } from '../data/animals';
 
-export interface TigerVectorState {
-  heading: number; // heading direction in degrees (0 - 360)
+export interface AnimalVectorState {
+  heading: number;      // heading direction in degrees (0 - 360)
   currentSpeed: number; // speed in km/h
 }
 
-// Map maintaining vector heading and speed state per tiger
-const tigerVectorMap = new Map<string, TigerVectorState>();
+// Map maintaining vector heading and speed state per animal
+const animalVectorMap = new Map<string, AnimalVectorState>();
 
 /**
- * Bounds for Umred-Karhandla Wildlife Sanctuary & surrounding zones (Nagpur)
- * Lat: 20.700° N to 20.930° N
- * Lng: 79.350° E to 79.680° E
+ * Bounds for Pench Tiger Reserve & surrounding zones (Nagpur/Seoni region)
+ * Lat: 21.650° N to 21.800° N
+ * Lng: 79.200° E to 79.400° E
  */
 const BOUNDS = {
-  minLat: 20.700,
-  maxLat: 20.930,
-  minLng: 79.350,
-  maxLng: 79.680
+  minLat: 21.650,
+  maxLat: 21.800,
+  minLng: 79.200,
+  maxLng: 79.400
 };
 
 /**
- * Calculates the next position for a tiger based on realistic movement vector,
+ * Species-specific speed ranges (min, max) in km/h
+ */
+const SPEED_RANGES: Record<string, { min: number; max: number }> = {
+  tiger:      { min: 1.5, max: 8.0 },
+  elephant:   { min: 0.8, max: 4.5 },
+  leopard:    { min: 2.0, max: 9.5 },
+  deer:       { min: 2.0, max: 10.0 },
+  wild_dog:   { min: 3.0, max: 11.0 },
+  sloth_bear: { min: 0.5, max: 3.5 }
+};
+
+/**
+ * Calculates the next position for an animal based on realistic movement vector,
  * heading inertia, and natural wandering algorithm.
  */
-export function calculateNextPosition(tiger: Tiger): Tiger {
-  let vector = tigerVectorMap.get(tiger.id);
+export function calculateNextPosition(animal: Animal): Animal {
+  let vector = animalVectorMap.get(animal.id);
+  const speedRange = SPEED_RANGES[animal.species] || { min: 1.0, max: 5.0 };
 
   if (!vector) {
-    // Initial random vector heading (0 - 360 degrees)
     vector = {
       heading: Math.floor(Math.random() * 360),
-      currentSpeed: tiger.speed || 3.5
+      currentSpeed: animal.speed || speedRange.min + Math.random() * (speedRange.max - speedRange.min)
     };
-    tigerVectorMap.set(tiger.id, vector);
+    animalVectorMap.set(animal.id, vector);
   }
 
   // 1. Natural Heading Inertia: Apply subtle direction change (-12 to +12 degrees)
   const headingVariation = (Math.random() - 0.5) * 24;
   vector.heading = (vector.heading + headingVariation + 360) % 360;
 
-  // 2. Speed Variation: Small continuous speed adjustment (+/- 0.2 km/h)
-  const speedVariation = (Math.random() - 0.5) * 0.4;
-  vector.currentSpeed = Math.min(5.5, Math.max(1.8, vector.currentSpeed + speedVariation));
+  // 2. Speed Variation: Small continuous speed adjustment (+/- 0.3 km/h)
+  const speedVariation = (Math.random() - 0.5) * 0.6;
+  vector.currentSpeed = Math.min(speedRange.max, Math.max(speedRange.min, vector.currentSpeed + speedVariation));
 
-  // 3. Convert speed (km/h) to geographic coordinates per 2-second tick tick
+  // 3. Convert speed (km/h) to geographic coordinates per 2-second tick
   // 1 degree latitude ≈ 111 km => 1 km = (1 / 111) degrees
   // Distance covered in 2 seconds at currentSpeed km/h: d = (currentSpeed / 3600) * 2 km
   const kmInTwoSeconds = (vector.currentSpeed / 3600) * 2;
-  // Apply a subtle visual scale factor for map presentation (approx 15-30m per tick)
+  // Visual scale factor for map presentation
   const deltaDegreesBase = (kmInTwoSeconds / 111) * 3.5;
 
   const headingRadians = (vector.heading * Math.PI) / 180;
   const deltaLat = Math.cos(headingRadians) * deltaDegreesBase;
   // Adjust longitude delta for cos(lat) map projection factor
-  const cosLat = Math.cos((tiger.lat * Math.PI) / 180);
+  const cosLat = Math.cos((animal.lat * Math.PI) / 180);
   const deltaLng = (Math.sin(headingRadians) * deltaDegreesBase) / (cosLat || 1);
 
-  let newLat = tiger.lat + deltaLat;
-  let newLng = tiger.lng + deltaLng;
+  let newLat = animal.lat + deltaLat;
+  let newLng = animal.lng + deltaLng;
 
   // 4. Core Zone Boundary Redirection: If close to edge, bounce heading inward
   if (newLat > BOUNDS.maxLat || newLat < BOUNDS.minLat || newLng > BOUNDS.maxLng || newLng < BOUNDS.minLng) {
-    // Reverse vector with slight random offset
     vector.heading = (vector.heading + 180 + (Math.random() - 0.5) * 40) % 360;
-    // Re-calculate small step inward
     const turnRadians = (vector.heading * Math.PI) / 180;
-    newLat = tiger.lat + Math.cos(turnRadians) * (deltaDegreesBase * 0.5);
-    newLng = tiger.lng + (Math.sin(turnRadians) * deltaDegreesBase * 0.5) / (cosLat || 1);
+    newLat = animal.lat + Math.cos(turnRadians) * (deltaDegreesBase * 0.5);
+    newLng = animal.lng + (Math.sin(turnRadians) * deltaDegreesBase * 0.5) / (cosLat || 1);
   }
 
-  // Clamped precision to prevent floating point inaccuracies
+  // Clamped precision
   newLat = Number(newLat.toFixed(6));
   newLng = Number(newLng.toFixed(6));
 
@@ -83,23 +93,26 @@ export function calculateNextPosition(tiger: Tiger): Tiger {
   });
 
   const updatedPathHistory: PathPoint[] = [
-    ...tiger.pathHistory,
+    ...animal.pathHistory,
     { lat: newLat, lng: newLng, timestamp: timestampStr }
   ].slice(-30); // Maintain recent 30 telemetry points
 
   return {
-    ...tiger,
+    ...animal,
     lat: newLat,
     lng: newLng,
-    speed: Number(vector.currentSpeed.toFixed(1)),
+    speed: Number(vector.currentSpeed.toFixed(2)),
     pathHistory: updatedPathHistory
   };
 }
 
 /**
- * Resets cached movement vectors for all tigers.
+ * Resets cached movement vectors for all animals.
  */
 export function resetTigerVectors(): void {
-  tigerVectorMap.clear();
+  animalVectorMap.clear();
 }
 
+export function resetAnimalVectors(): void {
+  animalVectorMap.clear();
+}

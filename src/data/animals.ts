@@ -1,6 +1,6 @@
 /**
- * Wildlife Simulation Data Model — Tiger Telemetry Data
- * Umred-Karhandla Wildlife Sanctuary & Nagpur Region Tracking
+ * PenchGuard AI — Tiger Telemetry Data
+ * Pench Tiger Reserve — Prototype Data
  */
 
 export type AnimalSpecies = 'tiger';
@@ -29,71 +29,94 @@ export interface Animal {
 // ── Backwards-compatibility alias ──
 export type Tiger = Animal;
 
+/**
+ * Pench Tiger Reserve approximate center: 21.72°N, 79.30°E
+ * Core Zone: ~21.68–21.78°N, ~79.25–79.38°E
+ * Buffer Zone: expanded ring
+ * Sensitive/Boundary Zone: outermost ring
+ */
 export const ANIMALS: Animal[] = [
-  // ─── TIGERS ───────────────────────────────────────────────
   {
-    id: 'tiger-01',
+    id: 'TGR-01',
     name: 'Sultan',
     species: 'tiger',
     emoji: '🐅',
-    lat: 20.8330,
-    lng: 79.5230,
+    lat: 21.7350,
+    lng: 79.3120,
     currentZone: 'Core Zone',
     previousZone: 'Core Zone',
     speed: 3.5,
     maxSpeed: 56,
     color: '#f97316',
     pathHistory: [
-      { lat: 20.8285, lng: 79.5180, timestamp: '09:30 AM' },
-      { lat: 20.8305, lng: 79.5200, timestamp: '10:00 AM' },
-      { lat: 20.8318, lng: 79.5215, timestamp: '10:15 AM' },
-      { lat: 20.8330, lng: 79.5230, timestamp: '10:30 AM' }
+      { lat: 21.7310, lng: 79.3080, timestamp: '08:30 AM' },
+      { lat: 21.7325, lng: 79.3095, timestamp: '09:00 AM' },
+      { lat: 21.7338, lng: 79.3108, timestamp: '09:30 AM' },
+      { lat: 21.7350, lng: 79.3120, timestamp: '10:00 AM' }
     ]
   },
   {
-    id: 'tiger-02',
+    id: 'TGR-02',
     name: 'Shera',
     species: 'tiger',
     emoji: '🐅',
-    lat: 20.7720,
-    lng: 79.4450,
+    lat: 21.7180,
+    lng: 79.2850,
     currentZone: 'Buffer Zone',
     previousZone: 'Core Zone',
     speed: 4.2,
     maxSpeed: 56,
     color: '#eab308',
     pathHistory: [
-      { lat: 20.7660, lng: 79.4380, timestamp: '09:30 AM' },
-      { lat: 20.7685, lng: 79.4408, timestamp: '10:00 AM' },
-      { lat: 20.7702, lng: 79.4428, timestamp: '10:15 AM' },
-      { lat: 20.7720, lng: 79.4450, timestamp: '10:30 AM' }
+      { lat: 21.7260, lng: 79.2980, timestamp: '08:30 AM' },
+      { lat: 21.7235, lng: 79.2940, timestamp: '09:00 AM' },
+      { lat: 21.7210, lng: 79.2900, timestamp: '09:30 AM' },
+      { lat: 21.7180, lng: 79.2850, timestamp: '10:00 AM' }
     ]
   },
   {
-    id: 'tiger-03',
+    id: 'TGR-03',
     name: 'Maya',
     species: 'tiger',
     emoji: '🐅',
-    lat: 20.7180,
-    lng: 79.6350,
-    currentZone: 'Transition Zone',
-    previousZone: 'Buffer Zone',
+    lat: 21.7520,
+    lng: 79.3450,
+    currentZone: 'Core Zone',
+    previousZone: 'Core Zone',
     speed: 2.8,
+    maxSpeed: 56,
+    color: '#8b5cf6',
+    pathHistory: [
+      { lat: 21.7490, lng: 79.3400, timestamp: '08:30 AM' },
+      { lat: 21.7500, lng: 79.3420, timestamp: '09:00 AM' },
+      { lat: 21.7510, lng: 79.3435, timestamp: '09:30 AM' },
+      { lat: 21.7520, lng: 79.3450, timestamp: '10:00 AM' }
+    ]
+  },
+  {
+    id: 'TGR-07',
+    name: 'Kali',
+    species: 'tiger',
+    emoji: '🐅',
+    lat: 21.6920,
+    lng: 79.2600,
+    currentZone: 'Boundary Zone',
+    previousZone: 'Buffer Zone',
+    speed: 5.1,
     maxSpeed: 56,
     color: '#ef4444',
     pathHistory: [
-      { lat: 20.7130, lng: 79.6290, timestamp: '09:30 AM' },
-      { lat: 20.7150, lng: 79.6315, timestamp: '10:00 AM' },
-      { lat: 20.7165, lng: 79.6332, timestamp: '10:15 AM' },
-      { lat: 20.7180, lng: 79.6350, timestamp: '10:30 AM' }
+      { lat: 21.7200, lng: 79.3050, timestamp: '08:12 AM' },
+      { lat: 21.7100, lng: 79.2900, timestamp: '09:20 AM' },
+      { lat: 21.7000, lng: 79.2750, timestamp: '10:20 AM' },
+      { lat: 21.6920, lng: 79.2600, timestamp: '10:42 AM' }
     ]
   }
 ];
 
-// Backwards-compat: keep TIGERS export pointing to only tigers
-export const TIGERS = ANIMALS.filter(a => a.species === 'tiger');
+// Backwards-compat
+export const TIGERS = ANIMALS;
 
-// Species display labels (kept for backwards-compat with tigers.ts re-export)
 export const SPECIES_LABELS: Record<AnimalSpecies, string> = {
   tiger: 'Tiger',
 };

@@ -8,8 +8,8 @@ export interface PositionPoint {
   timestamp: string;
 }
 
-export interface TigerMovementEvent {
-  tigerId: string;
+export interface AnimalMovementEvent {
+  animalId: string;
   name: string;
   currentPosition: PositionPoint;
   previousPosition: PositionPoint | null;
@@ -19,12 +19,16 @@ export interface TigerMovementEvent {
   previousZone: string;
 }
 
+// Backwards-compat alias
+export type TigerMovementEvent = AnimalMovementEvent;
+
 /**
- * Handler signature for individual tiger movement updates
+ * Handler signature for individual animal movement updates
  */
-export type TigerMovedHandler = (event: TigerMovementEvent) => void;
+export type AnimalMovedHandler = (event: AnimalMovementEvent) => void;
+export type TigerMovedHandler = AnimalMovedHandler;
 
 /**
  * Handler signature for full telemetry batch updates
  */
-export type TelemetryBatchHandler = (events: TigerMovementEvent[]) => void;
+export type TelemetryBatchHandler = (events: AnimalMovementEvent[]) => void;

@@ -2,9 +2,15 @@ import React from 'react';
 
 export default function Sidebar({ activePage, setActivePage }) {
   const menuItems = [
-    { id: 'live-map', label: '🗺 Live Map' },
-    { id: 'admin-panel', label: '⚙ Admin Panel' },
-    { id: 'villager-panel', label: '🏠 Villager Panel' }
+    { id: 'dashboard', label: '📊 Dashboard' },
+    { id: 'camera-traps', label: '📷 Camera Traps' },
+    { id: 'ai-triage', label: '🔬 AI Triage' },
+    { id: 'tiger-intelligence', label: '🐅 Tiger Intelligence' },
+    { id: 'movement-map', label: '🗺 Movement Map' },
+    { id: 'alerts', label: '🚨 Alerts' },
+    { id: 'observations', label: '📋 Observations' },
+    { id: 'analytics', label: '📈 Analytics' },
+    { id: 'system-health', label: '⚙ System Health' }
   ];
 
   return (

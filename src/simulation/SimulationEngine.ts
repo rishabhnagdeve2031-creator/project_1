@@ -1,14 +1,14 @@
-import type { Tiger } from '../data/tigers';
-import { calculateNextPosition, resetTigerVectors } from './tigerMovement';
+import type { Animal } from '../data/animals';
+import { calculateNextPosition, resetAnimalVectors } from './tigerMovement';
 import type { ITelemetryProvider } from './interfaces/ITelemetryProvider';
 import type {
-  TigerMovementEvent,
-  TigerMovedHandler,
+  AnimalMovementEvent,
+  AnimalMovedHandler,
   TelemetryBatchHandler,
   PositionPoint
 } from './types';
 
-export type SimulationListener = (tigers: Tiger[]) => void;
+export type SimulationListener = (animals: Animal[]) => void;
 
 /**
  * SimulationEngine
@@ -16,19 +16,18 @@ export type SimulationListener = (tigers: Tiger[]) => void;
  * executes ticks on a 2-second interval loop, and implements ITelemetryProvider for AlertManager integration.
  */
 export class SimulationEngine implements ITelemetryProvider {
-  private tigers: Tiger[];
+  private animals: Animal[];
   private previousPositionsMap: Map<string, PositionPoint> = new Map();
   private timerId: number | null = null;
   private isRunning: boolean = false;
 
   private batchListeners: Set<TelemetryBatchHandler> = new Set();
-  private tigerMovedListeners: Set<TigerMovedHandler> = new Set();
+  private animalMovedListeners: Set<AnimalMovedHandler> = new Set();
   private readonly TICK_INTERVAL_MS: number = 2000; // 2 seconds update requirement
 
-  constructor(initialTigers: Tiger[]) {
-    this.tigers = initialTigers.map((t) => ({ ...t, pathHistory: [...t.pathHistory] }));
-    // Record initial positions
-    this.recordPreviousPositions(this.tigers);
+  constructor(initialAnimals: Animal[]) {
+    this.animals = initialAnimals.map((a) => ({ ...a, pathHistory: [...a.pathHistory] }));
+    this.recordPreviousPositions(this.animals);
   }
 
   /**
@@ -55,50 +54,50 @@ export class SimulationEngine implements ITelemetryProvider {
   }
 
   /**
-   * Resets the simulation to the initial tiger coordinates and clears vector state.
+   * Resets the simulation to the initial animal coordinates and clears vector state.
    */
-  public reset(initialTigers: Tiger[]): void {
+  public reset(initialAnimals: Animal[]): void {
     this.stop();
-    resetTigerVectors();
+    resetAnimalVectors();
     this.previousPositionsMap.clear();
-    this.tigers = initialTigers.map((t) => ({
-      ...t,
-      pathHistory: [...t.pathHistory]
+    this.animals = initialAnimals.map((a) => ({
+      ...a,
+      pathHistory: [...a.pathHistory]
     }));
-    this.recordPreviousPositions(this.tigers);
+    this.recordPreviousPositions(this.animals);
     this.emit(this.getLatestTelemetry());
   }
 
   /**
    * Executes a single simulation step tick.
-   * Updates latitude, longitude, speed, and path history for all tigers.
+   * Updates latitude, longitude, speed, and path history for all animals.
    */
   public tick(): void {
-    const updatedTigers = this.tigers.map((tiger) => {
+    const updatedAnimals = this.animals.map((animal) => {
       // Store current position as previous before moving
-      this.previousPositionsMap.set(tiger.id, {
-        lat: tiger.lat,
-        lng: tiger.lng,
-        timestamp: tiger.pathHistory[tiger.pathHistory.length - 1]?.timestamp || new Date().toLocaleTimeString()
+      this.previousPositionsMap.set(animal.id, {
+        lat: animal.lat,
+        lng: animal.lng,
+        timestamp: animal.pathHistory[animal.pathHistory.length - 1]?.timestamp || new Date().toLocaleTimeString()
       });
 
-      return calculateNextPosition(tiger);
+      return calculateNextPosition(animal);
     });
 
-    this.tigers = updatedTigers;
-    const events = this.buildTelemetryEvents(this.tigers);
+    this.animals = updatedAnimals;
+    const events = this.buildTelemetryEvents(this.animals);
     this.emit(events);
   }
 
   // --- ITelemetryProvider Implementation for Alert System Integration ---
 
   /**
-   * Subscribes a handler to individual tiger movement events.
+   * Subscribes a handler to individual animal movement events.
    */
-  public onTigerMoved(handler: TigerMovedHandler): () => void {
-    this.tigerMovedListeners.add(handler);
+  public onTigerMoved(handler: AnimalMovedHandler): () => void {
+    this.animalMovedListeners.add(handler);
     return () => {
-      this.tigerMovedListeners.delete(handler);
+      this.animalMovedListeners.delete(handler);
     };
   }
 
@@ -118,36 +117,43 @@ export class SimulationEngine implements ITelemetryProvider {
   /**
    * Unsubscribes a listener handler.
    */
-  public unsubscribe(handler: TigerMovedHandler | TelemetryBatchHandler): void {
-    this.tigerMovedListeners.delete(handler as TigerMovedHandler);
+  public unsubscribe(handler: AnimalMovedHandler | TelemetryBatchHandler): void {
+    this.animalMovedListeners.delete(handler as AnimalMovedHandler);
     this.batchListeners.delete(handler as TelemetryBatchHandler);
   }
 
   /**
    * Emits telemetry movement events to all registered batch and single-movement handlers.
    */
-  public emit(events: TigerMovementEvent[]): void {
+  public emit(events: AnimalMovementEvent[]): void {
     // Notify batch subscribers
     this.batchListeners.forEach((handler) => handler(events));
 
-    // Notify individual tiger movement subscribers
+    // Notify individual animal movement subscribers
     events.forEach((event) => {
-      this.tigerMovedListeners.forEach((handler) => handler(event));
+      this.animalMovedListeners.forEach((handler) => handler(event));
     });
   }
 
   /**
-   * Returns the most recent telemetry snapshot as TigerMovementEvent objects.
+   * Returns the most recent telemetry snapshot as AnimalMovementEvent objects.
    */
-  public getLatestTelemetry(): TigerMovementEvent[] {
-    return this.buildTelemetryEvents(this.tigers);
+  public getLatestTelemetry(): AnimalMovementEvent[] {
+    return this.buildTelemetryEvents(this.animals);
   }
 
   /**
-   * Returns a copy of the current state of all tigers.
+   * Returns a copy of the current state of all animals.
    */
-  public getTigers(): Tiger[] {
-    return this.tigers.map((t) => ({ ...t, pathHistory: [...t.pathHistory] }));
+  public getTigers(): Animal[] {
+    return this.animals.map((a) => ({ ...a, pathHistory: [...a.pathHistory] }));
+  }
+
+  /**
+   * Returns a copy of the current state of all animals.
+   */
+  public getAnimals(): Animal[] {
+    return this.animals.map((a) => ({ ...a, pathHistory: [...a.pathHistory] }));
   }
 
   /**
@@ -159,42 +165,44 @@ export class SimulationEngine implements ITelemetryProvider {
 
   // --- Private Helpers ---
 
-  private recordPreviousPositions(tigers: Tiger[]): void {
-    tigers.forEach((tiger) => {
-      this.previousPositionsMap.set(tiger.id, {
-        lat: tiger.lat,
-        lng: tiger.lng,
-        timestamp: tiger.pathHistory[tiger.pathHistory.length - 1]?.timestamp || new Date().toLocaleTimeString()
+  private recordPreviousPositions(animals: Animal[]): void {
+    animals.forEach((animal) => {
+      this.previousPositionsMap.set(animal.id, {
+        lat: animal.lat,
+        lng: animal.lng,
+        timestamp: animal.pathHistory[animal.pathHistory.length - 1]?.timestamp || new Date().toLocaleTimeString()
       });
     });
   }
 
-  private buildTelemetryEvents(tigers: Tiger[]): TigerMovementEvent[] {
+  private buildTelemetryEvents(animals: Animal[]): AnimalMovementEvent[] {
     const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-    return tigers.map((tiger) => {
-      const prev = this.previousPositionsMap.get(tiger.id) || null;
+    return animals.map((animal) => {
+      const prev = this.previousPositionsMap.get(animal.id) || null;
 
-      const movementHistory: PositionPoint[] = tiger.pathHistory.map((p) => ({
+      const movementHistory: PositionPoint[] = animal.pathHistory.map((p) => ({
         lat: p.lat,
         lng: p.lng,
         timestamp: p.timestamp || now
       }));
 
       return {
-        tigerId: tiger.id,
-        name: tiger.name,
+        animalId: animal.id,
+        // Keep tigerId for backwards compat with ITelemetryProvider
+        tigerId: animal.id,
+        name: animal.name,
         currentPosition: {
-          lat: tiger.lat,
-          lng: tiger.lng,
+          lat: animal.lat,
+          lng: animal.lng,
           timestamp: now
         },
         previousPosition: prev,
         movementHistory,
-        currentSpeed: tiger.speed,
-        currentZone: tiger.currentZone,
-        previousZone: tiger.previousZone
-      };
+        currentSpeed: animal.speed,
+        currentZone: animal.currentZone,
+        previousZone: animal.previousZone
+      } as AnimalMovementEvent & { tigerId: string };
     });
   }
 }
