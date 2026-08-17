@@ -411,55 +411,71 @@ export default function LiveMap() {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [popupAnimal, setPopupAnimal] = useState(null);
 
-  const wasInsideTerritoryRef = useRef(true);
-  const hasTriggeredExitAlarmRef = useRef(false);
+  const previousPositionsRef = useRef(new Map());
+  const triggeredExitAlarmsRef = useRef(new Set());
 
-  // ── Territory Exit Alarm Detection (Kali TGR-07 crosses boundary) ───────────
+  // ── Universal Boundary Crossing Detection (Works for ALL Tigers) ────────────
   useEffect(() => {
-    if (!isRunning) return;
-    const kali = animals.find(a => a.id === 'TGR-07');
-    const kaliTerritory = COMPUTED_TERRITORIES.find(t => t.id === 'TGR-07');
-    if (!kali || !kaliTerritory) return;
+    if (!isRunning && !hasMoved) return;
 
-    const isInsideNow = isPointInPolygon(kali, kaliTerritory.polygon);
+    animals.forEach(animal => {
+      const tigerTerritory = COMPUTED_TERRITORIES.find(t => t.id === animal.id);
+      if (!tigerTerritory) return;
 
-    // Exact moment the tiger CROSSES the existing territory boundary
-    if (wasInsideTerritoryRef.current && !isInsideNow && !hasTriggeredExitAlarmRef.current) {
-      hasTriggeredExitAlarmRef.current = true;
-      wasInsideTerritoryRef.current = false;
+      const currentPos = { lat: animal.lat, lng: animal.lng };
+      const previousPos = previousPositionsRef.current.get(animal.id) || currentPos;
 
-      // 1. Play LOUD emergency warning alarm sound
-      playLoudWarningAlarm();
+      const previouslyInside = isPointInPolygon(previousPos, tigerTerritory.polygon);
+      const currentlyInside = isPointInPolygon(currentPos, tigerTerritory.polygon);
 
-      // 2. Create and dispatch alert into existing alert system
-      const exitAlert = {
-        type: 'Territory Boundary Breach',
-        severity: 'HIGH',
-        tigerId: 'TGR-07',
-        cameraId: 'CT-K02',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        location: 'Kali Territory — North-East Perimeter Breach',
-        description: 'CRITICAL ALERT: Tiger TGR-07 (Kali) has crossed the boundary of her established territory into unmonitored corridor.',
-        whatChanged: 'Territory boundary breached. Tiger has crossed outside her established home range.',
-        supportingEvidence: [
-          `Breach Coordinates: ${kali.lat.toFixed(4)}°N, ${kali.lng.toFixed(4)}°E`,
-          'Point-in-Polygon Check: isPointInPolygon = FALSE (OUTSIDE established range)',
-          'Movement Trajectory: North-East corridor crossing',
-          'Immediate Action: Automated dispatcher alert sent to Forest Range Officers'
-        ],
-        confidence: 96,
-        surveyEffort: 'Real-time GPS Telemetry & Satellite Mesh',
-        lat: kali.lat,
-        lng: kali.lng
-      };
+      // Save current position for next tick evaluation
+      previousPositionsRef.current.set(animal.id, currentPos);
 
-      addAlert(exitAlert);
-    }
-  }, [animals, isRunning, addAlert]);
+      // Boundary crossing occurs ONLY when: previouslyInside === true && currentlyInside === false
+      if (previouslyInside && !currentlyInside && !triggeredExitAlarmsRef.current.has(animal.id)) {
+        triggeredExitAlarmsRef.current.add(animal.id);
+
+        // 1. Play LOUD warning sound once per boundary-crossing event
+        playLoudWarningAlarm();
+
+        // 2. Nearest camera detection station in territory
+        const nearestCam = tigerTerritory.cameraPoints.reduce((prev, curr) => {
+          const dCurr = Math.hypot(curr.lat - animal.lat, curr.lng - animal.lng);
+          const dPrev = Math.hypot(prev.lat - animal.lat, prev.lng - animal.lng);
+          return dCurr < dPrev ? curr : prev;
+        }, tigerTerritory.cameraPoints[0]);
+
+        // 3. Dynamic alert formatted for any crossing tiger
+        const exitAlert = {
+          id: `ALT-EXT-${animal.id}-${Date.now().toString().slice(-4)}`,
+          type: 'Tiger Territory Exit',
+          severity: 'HIGH',
+          tigerId: animal.id,
+          cameraId: nearestCam?.id || 'CT-CORRIDOR',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          location: `${animal.name} Territory — Perimeter Boundary Exit`,
+          description: `⚠️ TIGER TERRITORY EXIT: ${animal.name} (${animal.id}) has crossed outside established territory.`,
+          whatChanged: `${animal.name} (${animal.id}) crossed territory boundary line into outside zone.`,
+          supportingEvidence: [
+            `Current Telemetry: ${animal.lat.toFixed(4)}°N, ${animal.lng.toFixed(4)}°E`,
+            `Previous Telemetry: ${previousPos.lat.toFixed(4)}°N, ${previousPos.lng.toFixed(4)}°E`,
+            `Status: OUTSIDE ESTABLISHED TERRITORY`,
+            'Action: Forest officer review recommended'
+          ],
+          confidence: 96,
+          surveyEffort: 'Real-time Telemetry & Mesh Sensors',
+          lat: animal.lat,
+          lng: animal.lng
+        };
+
+        addAlert(exitAlert);
+      }
+    });
+  }, [animals, isRunning, hasMoved, addAlert]);
 
   const handleResetSim = () => {
-    hasTriggeredExitAlarmRef.current = false;
-    wasInsideTerritoryRef.current = true;
+    previousPositionsRef.current.clear();
+    triggeredExitAlarmsRef.current.clear();
     resetSimulation();
   };
 
