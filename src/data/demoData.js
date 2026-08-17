@@ -254,6 +254,28 @@ export const INITIAL_ALERTS = [
     surveyEffort: 'Mesh Active — No Hardware Outage',
     status: 'active',
     lat: 21.7520, lng: 79.3450
+  },
+  {
+    id: 'ALT-004',
+    type: 'Possible Territory Exit',
+    severity: 'MEDIUM',
+    tigerId: 'TGR-07',
+    cameraId: 'CT-K01',
+    timestamp: '16 Aug 2026, 11:15 AM',
+    location: 'Kali Territory — South-East Boundary',
+    description: 'Tiger TGR-07 (Kali) is approaching the boundary of her established territory and may move outside her normal range.',
+    whatChanged: 'Kali is approaching the boundary of her established territory and may move outside her normal range.',
+    supportingEvidence: [
+      'Current Position: 21.7120°N, 79.3340°E (CT-K01)',
+      'Boundary Proximity: 180 meters from territory perimeter (heading North-East)',
+      'Status: Approaching territory boundary — still inside established polygon',
+      'Recommendation: Forest officer review recommended'
+    ],
+    confidence: 94,
+    surveyEffort: 'Active Camera Mesh (90%+ Confidence)',
+    status: 'active',
+    lat: 21.7120,
+    lng: 79.3340
   }
 ];
 
@@ -269,7 +291,7 @@ export const KPI_DATA = {
   individualTigers: 4,
   pendingHumanReviews: 2,
   activeDeviations: 2,
-  activeAlerts: 3,
+  activeAlerts: 4,
   highRiskZones: 1,
   storageSavedGb: 2.4,
   processingTimeMin: '4m 21s'

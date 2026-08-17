@@ -41,15 +41,23 @@ export function calculateNextPosition(animal: Animal): Animal {
   const speedRange = SPEED_RANGES[animal.species] || { min: 1.0, max: 5.0 };
 
   if (!vector) {
-    vector = {
-      heading: Math.floor(Math.random() * 360),
-      currentSpeed: animal.speed || speedRange.min + Math.random() * (speedRange.max - speedRange.min)
-    };
+    if (animal.id === 'TGR-07') {
+      // Dedicated path for Kali: starts inside, travels North-East toward and across territory boundary
+      vector = {
+        heading: 40,
+        currentSpeed: 6.2
+      };
+    } else {
+      vector = {
+        heading: Math.floor(Math.random() * 360),
+        currentSpeed: animal.speed || speedRange.min + Math.random() * (speedRange.max - speedRange.min)
+      };
+    }
     animalVectorMap.set(animal.id, vector);
   }
 
-  // 1. Natural Heading Inertia: Apply subtle direction change (-12 to +12 degrees)
-  const headingVariation = (Math.random() - 0.5) * 24;
+  // 1. Natural Heading Inertia: Apply subtle direction change (-12 to +12 degrees, smaller for Kali to maintain trajectory)
+  const headingVariation = animal.id === 'TGR-07' ? (Math.random() - 0.5) * 6 : (Math.random() - 0.5) * 24;
   vector.heading = (vector.heading + headingVariation + 360) % 360;
 
   // 2. Speed Variation: Small continuous speed adjustment (+/- 0.3 km/h)

@@ -41,18 +41,18 @@ export const ANIMALS: Animal[] = [
     name: 'Sultan',
     species: 'tiger',
     emoji: '🐅',
-    lat: 21.7350,
-    lng: 79.3120,
+    lat: 21.7600,
+    lng: 79.3380,
     currentZone: 'Core Zone',
     previousZone: 'Core Zone',
     speed: 3.5,
     maxSpeed: 56,
     color: '#f97316',
     pathHistory: [
-      { lat: 21.7310, lng: 79.3080, timestamp: '08:30 AM' },
-      { lat: 21.7325, lng: 79.3095, timestamp: '09:00 AM' },
-      { lat: 21.7338, lng: 79.3108, timestamp: '09:30 AM' },
-      { lat: 21.7350, lng: 79.3120, timestamp: '10:00 AM' }
+      { lat: 21.7570, lng: 79.3350, timestamp: '08:30 AM' },
+      { lat: 21.7580, lng: 79.3360, timestamp: '09:00 AM' },
+      { lat: 21.7590, lng: 79.3370, timestamp: '09:30 AM' },
+      { lat: 21.7600, lng: 79.3380, timestamp: '10:00 AM' }
     ]
   },
   {
@@ -60,18 +60,18 @@ export const ANIMALS: Animal[] = [
     name: 'Shera',
     species: 'tiger',
     emoji: '🐅',
-    lat: 21.7180,
-    lng: 79.2850,
+    lat: 21.7170,
+    lng: 79.2820,
     currentZone: 'Buffer Zone',
     previousZone: 'Core Zone',
     speed: 4.2,
     maxSpeed: 56,
     color: '#eab308',
     pathHistory: [
-      { lat: 21.7260, lng: 79.2980, timestamp: '08:30 AM' },
-      { lat: 21.7235, lng: 79.2940, timestamp: '09:00 AM' },
-      { lat: 21.7210, lng: 79.2900, timestamp: '09:30 AM' },
-      { lat: 21.7180, lng: 79.2850, timestamp: '10:00 AM' }
+      { lat: 21.7130, lng: 79.2780, timestamp: '08:30 AM' },
+      { lat: 21.7145, lng: 79.2795, timestamp: '09:00 AM' },
+      { lat: 21.7160, lng: 79.2810, timestamp: '09:30 AM' },
+      { lat: 21.7170, lng: 79.2820, timestamp: '10:00 AM' }
     ]
   },
   {
@@ -79,18 +79,18 @@ export const ANIMALS: Animal[] = [
     name: 'Maya',
     species: 'tiger',
     emoji: '🐅',
-    lat: 21.7520,
-    lng: 79.3450,
+    lat: 21.7600,
+    lng: 79.2860,
     currentZone: 'Core Zone',
     previousZone: 'Core Zone',
     speed: 2.8,
     maxSpeed: 56,
     color: '#8b5cf6',
     pathHistory: [
-      { lat: 21.7490, lng: 79.3400, timestamp: '08:30 AM' },
-      { lat: 21.7500, lng: 79.3420, timestamp: '09:00 AM' },
-      { lat: 21.7510, lng: 79.3435, timestamp: '09:30 AM' },
-      { lat: 21.7520, lng: 79.3450, timestamp: '10:00 AM' }
+      { lat: 21.7570, lng: 79.2830, timestamp: '08:30 AM' },
+      { lat: 21.7580, lng: 79.2840, timestamp: '09:00 AM' },
+      { lat: 21.7590, lng: 79.2850, timestamp: '09:30 AM' },
+      { lat: 21.7600, lng: 79.2860, timestamp: '10:00 AM' }
     ]
   },
   {
@@ -98,18 +98,18 @@ export const ANIMALS: Animal[] = [
     name: 'Kali',
     species: 'tiger',
     emoji: '🐅',
-    lat: 21.6920,
-    lng: 79.2600,
+    lat: 21.6960,
+    lng: 79.3310,
     currentZone: 'Boundary Zone',
     previousZone: 'Buffer Zone',
     speed: 5.1,
     maxSpeed: 56,
     color: '#ef4444',
     pathHistory: [
-      { lat: 21.7200, lng: 79.3050, timestamp: '08:12 AM' },
-      { lat: 21.7100, lng: 79.2900, timestamp: '09:20 AM' },
-      { lat: 21.7000, lng: 79.2750, timestamp: '10:20 AM' },
-      { lat: 21.6920, lng: 79.2600, timestamp: '10:42 AM' }
+      { lat: 21.6930, lng: 79.3280, timestamp: '08:12 AM' },
+      { lat: 21.6940, lng: 79.3290, timestamp: '09:20 AM' },
+      { lat: 21.6950, lng: 79.3300, timestamp: '10:20 AM' },
+      { lat: 21.6960, lng: 79.3310, timestamp: '10:42 AM' }
     ]
   }
 ];
