@@ -69,14 +69,14 @@ export default function Dashboard() {
 
       {/* KPI Row */}
       <div className="kpi-row">
-        <KPICard icon="📷" label="Cameras Online" value={`${cameras.length > 0 ? onlineCameras.length : 0} / ${cameras.length}`} accent="#10b981" />
-        <KPICard icon="🖼" label="Images Processed" value={kpi.imagesProcessed.toLocaleString()} accent="#3b82f6" />
-        <KPICard icon="🍃" label="Blank Quarantined" value={kpi.blankImages} accent="#9ca3af" />
-        <KPICard icon="✅" label="Useful Images" value={kpi.usefulImages} accent="#10b981" />
-        <KPICard icon="🐅" label="Tiger Detections" value={kpi.tigerDetections} accent="#f97316" />
-        <KPICard icon="🔍" label="Tigers Enrolled" value={kpi.individualTigers} accent="#8b5cf6" />
-        <KPICard icon="👁" label="Pending Review" value={kpi.pendingHumanReviews} accent="#fbbf24" />
-        <KPICard icon="🚨" label="Active Alerts" value={kpi.activeAlerts} accent={kpi.activeAlerts > 0 ? '#ef4444' : '#10b981'} />
+        <KPICard label="Cameras Online" value={`${cameras.length > 0 ? onlineCameras.length : 0} / ${cameras.length}`} accent="#10b981" />
+        <KPICard label="Images Processed" value={kpi.imagesProcessed.toLocaleString()} accent="#3b82f6" />
+        <KPICard label="Blank Quarantined" value={kpi.blankImages} accent="#9ca3af" />
+        <KPICard label="Useful Images" value={kpi.usefulImages} accent="#10b981" />
+        <KPICard label="Tiger Detections" value={kpi.tigerDetections} accent="#f97316" />
+        <KPICard label="Tigers Enrolled" value={kpi.individualTigers} accent="#8b5cf6" />
+        <KPICard label="Pending Review" value={kpi.pendingHumanReviews} accent="#fbbf24" />
+        <KPICard label="Active Alerts" value={kpi.activeAlerts} accent={kpi.activeAlerts > 0 ? '#ef4444' : '#10b981'} />
       </div>
 
       {/* Export Toolbar */}
@@ -302,12 +302,11 @@ export default function Dashboard() {
   );
 }
 
-function KPICard({ icon, label, value, accent }) {
+function KPICard({ label, value, accent }) {
   return (
     <div className="kpi-card">
-      <span className="kpi-icon">{icon}</span>
-      <span className="kpi-value" style={{ color: accent }}>{value}</span>
       <span className="kpi-label">{label}</span>
+      <span className="kpi-value" style={{ color: accent }}>{value}</span>
     </div>
   );
 }

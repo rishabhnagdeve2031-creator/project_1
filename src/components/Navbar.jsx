@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAppContext } from '../context/AppContext';
+import logoImg from '../assets/logo.png';
 
 export default function Navbar({ isMenuOpen, onToggleMenu }) {
   const { toggleAppMode, isRealMode, backendStatus } = useAppContext();
@@ -20,8 +21,8 @@ export default function Navbar({ isMenuOpen, onToggleMenu }) {
         </button>
 
         <div className="navbar-brand">
-          <div className="brand-icon-wrapper">
-            <span className="wildlife-emoji" role="img" aria-label="wildlife">🐾</span>
+          <div className="brand-icon-wrapper" style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}>
+            <img src={logoImg} alt="TigerMarg Logo" className="brand-logo-img" />
           </div>
           <div className="brand-title-group">
             <h1 className="brand-title">TigerMarg</h1>
@@ -141,18 +142,15 @@ export default function Navbar({ isMenuOpen, onToggleMenu }) {
         .brand-icon-wrapper {
           width: 38px;
           height: 38px;
-          border-radius: 8px;
-          background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(4, 120, 87, 0.3));
-          border: 1px solid rgba(16, 185, 129, 0.4);
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
         }
 
-        .wildlife-emoji {
-          font-size: 20px;
-          line-height: 1;
+        .brand-logo-img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
         }
 
         .brand-title-group {

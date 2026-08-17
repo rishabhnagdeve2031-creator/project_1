@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Layout from './components/Layout';
 import { AppProvider } from './context/AppContext';
 
+import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import BatchProcessing from './pages/BatchProcessing';
 import CameraTraps from './pages/CameraTraps';
@@ -15,7 +16,7 @@ import Analytics from './pages/Analytics';
 import SystemHealth from './pages/SystemHealth';
 
 export default function App() {
-  const [activePage, setActivePage] = useState('dashboard');
+  const [activePage, setActivePage] = useState('home');
 
   const renderActivePage = () => {
     switch (activePage) {
@@ -48,9 +49,13 @@ export default function App() {
 
   return (
     <AppProvider>
-      <Layout activePage={activePage} setActivePage={setActivePage}>
-        {renderActivePage()}
-      </Layout>
+      {activePage === 'home' ? (
+        <Home onNavigate={setActivePage} />
+      ) : (
+        <Layout activePage={activePage} setActivePage={setActivePage}>
+          {renderActivePage()}
+        </Layout>
+      )}
     </AppProvider>
   );
 }
