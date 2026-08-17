@@ -133,11 +133,9 @@ export default function BatchProcessing() {
     <div className="pg-page">
       <div className="page-header">
         <div>
-          <h2 className="page-title">📁 Camera Trap Batch Processing & Safe Quarantine</h2>
+          <h2 className="page-title">Batch Processing</h2>
           <p className="page-subtitle">
-            {isRealMode
-              ? 'REAL DATA MODE — Folder Scanning, Blank Image Filtering & Storage Optimization'
-              : 'DEMO MODE — Sample Batch Processing Demonstration'}
+            Upload folders or images to scan, filter blanks, and detect tigers in bulk.
           </p>
         </div>
         <div className="tab-buttons">
@@ -156,7 +154,7 @@ export default function BatchProcessing() {
       {activeTab === 'upload' && (
         <div className="batch-container">
           <div className="upload-section-card">
-            <h3>Select Real Camera Trap Directory or Files</h3>
+            <h3>Select Camera Trap Directory or Files</h3>
             <p className="sub-text">Scans raw folder hierarchy (e.g. <code>CameraTrap/CT001/IMG001.jpg</code>). Multi-image selection supported.</p>
 
             <div className="file-pickers-row">
@@ -171,7 +169,7 @@ export default function BatchProcessing() {
               <div className="picker-box">
                 <label className="picker-label">
                   <span className="icon">🖼</span>
-                  <span>Select Multiple Real Images</span>
+                  <span>Select Multiple Images</span>
                   <input type="file" multiple accept="image/*" onChange={handleFolderSelect} hidden />
                 </label>
               </div>

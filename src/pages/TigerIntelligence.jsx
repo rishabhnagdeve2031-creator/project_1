@@ -26,12 +26,15 @@ export default function TigerIntelligence() {
     <div className="pg-page">
       <div className="page-header">
         <div>
-          <h2 className="page-title">🐅 Individual Tiger Catalogue & Stripe Matching</h2>
-          <p className="page-subtitle">Pench Tiger Reserve — Striping Pattern Identification & Human Review Workflow</p>
+          <h2 className="page-title">Individual Tigers</h2>
+          <p className="page-subtitle">Tiger profile catalog and stripe identification</p>
         </div>
         <div className="tab-buttons">
           <button className={`tab-btn ${activeTab === 'catalogue' ? 'active' : ''}`} onClick={() => setActiveTab('catalogue')}>
-            🐅 Tiger Catalogue ({tigerProfiles.length})
+            Catalogue ({tigerProfiles.length})
+          </button>
+          <button className={`tab-btn ${activeTab === 'stripe-matcher' ? 'active' : ''}`} onClick={() => setActiveTab('stripe-matcher')}>
+            🔬 Stripe Pattern Matcher
           </button>
           <button className={`tab-btn ${activeTab === 'human-review' ? 'active' : ''}`} onClick={() => setActiveTab('human-review')}>
             👁 Human Review Queue ({pendingReviews.length})
@@ -293,6 +296,87 @@ export default function TigerIntelligence() {
               💾 Enroll New Tiger Profile
             </button>
           </form>
+        </div>
+      )}
+
+      {activeTab === 'stripe-matcher' && (
+        <div className="stripe-matcher-container" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 12, padding: 24 }}>
+          <div className="matcher-header" style={{ marginBottom: 20 }}>
+            <h3 style={{ margin: 0, color: 'var(--text-bright)', fontSize: 16 }}>🔬 Side-by-Side Stripe Pattern Re-Identification</h3>
+            <p style={{ margin: '4px 0 0 0', color: 'var(--text-dim)', fontSize: 12 }}>
+              Compare candidate crop flank stripes against baseline individual tiger database profiles using keypoint alignment vectors.
+            </p>
+          </div>
+
+          <div className="matcher-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 120px 1fr', gap: 20, alignItems: 'center' }}>
+            {/* Candidate Flank */}
+            <div className="matcher-box" style={{ background: 'var(--bg-panel)', padding: 16, borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
+              <div style={{ fontSize: 12, fontWeight: 'bold', color: '#60a5fa', marginBottom: 10, display: 'flex', justifyContent: 'space-between' }}>
+                <span>📷 CANDIDATE FLANK (Sighting OBS-104)</span>
+                <span className="font-mono" style={{ color: 'var(--text-dim)' }}>CT-014 · 14:22 PM</span>
+              </div>
+              <div style={{ height: 180, borderRadius: 8, background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed #3b82f6', position: 'relative', overflow: 'hidden' }}>
+                <span style={{ fontSize: 64, opacity: 0.85 }}>🐅</span>
+                <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
+                  <circle cx="80" cy="60" r="4" fill="#34d399" />
+                  <circle cx="140" cy="90" r="4" fill="#34d399" />
+                  <circle cx="200" cy="70" r="4" fill="#34d399" />
+                  <circle cx="110" cy="130" r="4" fill="#34d399" />
+                  <line x1="80" y1="60" x2="140" y2="90" stroke="#34d399" strokeWidth="1.5" strokeDasharray="3 3" />
+                  <line x1="140" y1="90" x2="200" y2="70" stroke="#34d399" strokeWidth="1.5" strokeDasharray="3 3" />
+                  <line x1="140" y1="90" x2="110" y2="130" stroke="#34d399" strokeWidth="1.5" strokeDasharray="3 3" />
+                </svg>
+              </div>
+              <div className="font-mono" style={{ fontSize: 11, marginTop: 10, color: 'var(--text-muted)' }}>
+                Left Flank Stripe Density: <strong>14 Stripes / 22 Keypoints</strong>
+              </div>
+            </div>
+
+            {/* Match Score Indicator */}
+            <div className="match-score-pill" style={{ textCenter: 'center', textAlign: 'center' }}>
+              <div style={{ fontSize: 26, fontWeight: 'bold', color: '#10b981' }}>94.2%</div>
+              <div className="font-mono" style={{ fontSize: 10, color: '#34d399', fontWeight: 'bold' }}>HIGH MATCH</div>
+              <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 4 }}>18 Vectors Aligned</div>
+            </div>
+
+            {/* Reference Flank */}
+            <div className="matcher-box" style={{ background: 'var(--bg-panel)', padding: 16, borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
+              <div style={{ fontSize: 12, fontWeight: 'bold', color: '#34d399', marginBottom: 10, display: 'flex', justifyContent: 'space-between' }}>
+                <span>🐅 DATABASE REFERENCE ({selectedTiger?.id || 'TGR-001'})</span>
+                <span className="font-mono" style={{ color: '#34d399' }}>{selectedTiger?.name || 'Sheru'}</span>
+              </div>
+              <div style={{ height: 180, borderRadius: 8, background: '#0c170c', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #10b981', position: 'relative', overflow: 'hidden' }}>
+                <span style={{ fontSize: 64, opacity: 0.85 }}>🐅</span>
+                <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
+                  <circle cx="75" cy="58" r="4" fill="#34d399" />
+                  <circle cx="138" cy="92" r="4" fill="#34d399" />
+                  <circle cx="198" cy="68" r="4" fill="#34d399" />
+                  <circle cx="112" cy="128" r="4" fill="#34d399" />
+                  <line x1="75" y1="58" x2="138" y2="92" stroke="#34d399" strokeWidth="1.5" />
+                  <line x1="138" y1="92" x2="198" y2="68" stroke="#34d399" strokeWidth="1.5" />
+                  <line x1="138" y1="92" x2="112" y2="128" stroke="#34d399" strokeWidth="1.5" />
+                </svg>
+              </div>
+              <div className="font-mono" style={{ fontSize: 11, marginTop: 10, color: 'var(--text-muted)' }}>
+                Baseline Stripe Profile: <strong>{selectedTiger?.id || 'TGR-001'} ({selectedTiger?.name || 'Sheru'})</strong>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 12, marginTop: 20, justifyContent: 'flex-end' }}>
+            <button
+              onClick={() => alert(`Confirmed! Sighting linked to ${selectedTiger?.name || 'TGR-001 Sheru'}. Database profile updated.`)}
+              style={{ padding: '8px 16px', borderRadius: 6, background: '#10b981', color: '#fff', border: 'none', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}
+            >
+              ✅ Confirm Stripe Match & Link Sighting
+            </button>
+            <button
+              onClick={() => alert('Flagged as new individual. Added to review queue.')}
+              style={{ padding: '8px 16px', borderRadius: 6, background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', border: '1px solid var(--border-subtle)', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}
+            >
+              ❌ Reject Match / Flag New Tiger
+            </button>
+          </div>
         </div>
       )}
 

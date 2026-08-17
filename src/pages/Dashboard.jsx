@@ -4,7 +4,6 @@ import { ExportService } from '../services/ExportService';
 
 export default function Dashboard() {
   const {
-    appMode,
     toggleAppMode,
     isRealMode,
     backendStatus,
@@ -26,22 +25,22 @@ export default function Dashboard() {
       <div className={`full-demo-banner ${isRealMode ? 'real' : 'demo'}`}>
         <div className="banner-info">
           <span className={`proto-badge ${isRealMode ? 'real' : 'demo'}`}>
-            {isRealMode ? '🟢 REAL DATA MODE (PRIMARY)' : '🟡 DEMO MODE ACTIVE'}
+            {isRealMode ? 'Live Data' : 'Demo'}
           </span>
           <span className="banner-title">
             {isRealMode
-              ? 'PenchGuard AI — Operational Real Data Processing Mode'
-              : 'PenchGuard AI — Presentation Demo Mode'}
+              ? 'Processing real camera trap data'
+              : 'Viewing sample demonstration data'}
           </span>
         </div>
         <div className="banner-actions">
           {isRealMode ? (
             <button className="run-full-demo-btn alt" onClick={toggleAppMode}>
-              🔄 Switch to Presentation Demo Mode
+              Switch to Demo Mode
             </button>
           ) : (
             <button className="run-full-demo-btn" onClick={runFullDemoWorkflow}>
-              🚀 Run Full 12-Step Demo Pipeline
+              Run Demo Pipeline
             </button>
           )}
         </div>
@@ -52,8 +51,8 @@ export default function Dashboard() {
         <span className="icon">{backendStatus.connected ? '✅' : '⚠️'}</span>
         <span>
           {backendStatus.connected
-            ? `Real YOLO Model Connected: ${backendStatus.model_path}`
-            : `${backendStatus.message} — Real inference requires backend server running.`}
+            ? `Detection model connected: ${backendStatus.model_name || 'best.pt'}`
+            : `Detection model offline — Start the backend server to enable inference.`}
         </span>
       </div>
 
@@ -62,8 +61,8 @@ export default function Dashboard() {
         <div className="real-empty-banner">
           <span className="empty-icon">📊</span>
           <div className="empty-text font-mono">
-            <strong>NO REAL DATA LOADED YET</strong>
-            <p>Upload real camera-trap images or folders in <strong>Batch Processing</strong> to populate real observations, tiger detections, and movement maps.</p>
+            <strong>No data loaded yet</strong>
+            <p>Upload camera trap images in <strong>Batch Processing</strong> to populate observations, detections, and movement maps.</p>
           </div>
         </div>
       )}
@@ -73,24 +72,24 @@ export default function Dashboard() {
         <KPICard icon="📷" label="Cameras Online" value={`${cameras.length > 0 ? onlineCameras.length : 0} / ${cameras.length}`} accent="#10b981" />
         <KPICard icon="🖼" label="Images Processed" value={kpi.imagesProcessed.toLocaleString()} accent="#3b82f6" />
         <KPICard icon="🍃" label="Blank Quarantined" value={kpi.blankImages} accent="#9ca3af" />
-        <KPICard icon="✅" label="Useful Wildlife Images" value={kpi.usefulImages} accent="#10b981" />
-        <KPICard icon="🐅" label="Tiger Detections (YOLO)" value={kpi.tigerDetections} accent="#f97316" />
-        <KPICard icon="🔍" label="Individual Tigers Enrolled" value={kpi.individualTigers} accent="#8b5cf6" />
-        <KPICard icon="👁" label="Pending Human Review" value={kpi.pendingHumanReviews} accent="#fbbf24" />
+        <KPICard icon="✅" label="Useful Images" value={kpi.usefulImages} accent="#10b981" />
+        <KPICard icon="🐅" label="Tiger Detections" value={kpi.tigerDetections} accent="#f97316" />
+        <KPICard icon="🔍" label="Tigers Enrolled" value={kpi.individualTigers} accent="#8b5cf6" />
+        <KPICard icon="👁" label="Pending Review" value={kpi.pendingHumanReviews} accent="#fbbf24" />
         <KPICard icon="🚨" label="Active Alerts" value={kpi.activeAlerts} accent={kpi.activeAlerts > 0 ? '#ef4444' : '#10b981'} />
       </div>
 
       {/* Export Toolbar */}
       <div className="export-toolbar">
-        <span className="exp-label">📥 Forest Department Export Tools:</span>
+        <span className="exp-label">Export Data</span>
         <button className="exp-btn" onClick={() => ExportService.exportObservationsCSV(observations)} disabled={observations.length === 0}>
-          📄 Export Observations (CSV)
+          Observations (CSV)
         </button>
         <button className="exp-btn" onClick={() => ExportService.exportTigerDatabaseJSON(tigerProfiles)} disabled={tigerProfiles.length === 0}>
-          📄 Export Tiger Catalogue (JSON)
+          Tiger Catalogue (JSON)
         </button>
         <button className="exp-btn" onClick={() => ExportService.exportAlertsCSV(alerts)} disabled={alerts.length === 0}>
-          📄 Export Alerts Log (CSV)
+          Alerts Log (CSV)
         </button>
       </div>
 
@@ -98,8 +97,8 @@ export default function Dashboard() {
         {/* Live Camera Activity */}
         <div className="dash-card span-2">
           <div className="card-title-row">
-            <h3>📷 Camera Station Network</h3>
-            <span className="card-badge">{cameras.length} Active Stations</span>
+            <h3>Camera Stations</h3>
+            <span className="card-badge">{cameras.length} stations</span>
           </div>
           {cameras.length > 0 ? (
             <div className="camera-mini-grid">
@@ -126,7 +125,7 @@ export default function Dashboard() {
         {/* Recent Detections */}
         <div className="dash-card">
           <div className="card-title-row">
-            <h3>🐅 Recent Detections</h3>
+            <h3>Recent Detections</h3>
           </div>
           <div className="detection-list">
             {recentObs.map(obs => {
@@ -157,8 +156,8 @@ export default function Dashboard() {
         {/* Recent Alerts */}
         <div className="dash-card">
           <div className="card-title-row">
-            <h3>🚨 Active Explainable Alerts</h3>
-            <span className="card-badge alert-badge">{activeAlerts.length} Active</span>
+            <h3>Active Alerts</h3>
+            <span className="card-badge alert-badge">{activeAlerts.length} active</span>
           </div>
           <div className="alert-list">
             {activeAlerts.length === 0 && <div className="empty-section-text font-mono">No active alerts logged.</div>}
@@ -181,8 +180,8 @@ export default function Dashboard() {
         {/* Individual Tigers */}
         <div className="dash-card span-2">
           <div className="card-title-row">
-            <h3>🔍 Enrolled Individual Tigers</h3>
-            <span className="card-badge">{tigerProfiles.length} Tigers</span>
+            <h3>Enrolled Tigers</h3>
+            <span className="card-badge">{tigerProfiles.length} tigers</span>
           </div>
           {tigerProfiles.length > 0 ? (
             <div className="tiger-overview-list">

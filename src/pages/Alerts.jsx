@@ -25,8 +25,8 @@ export default function Alerts() {
     <div className="pg-page">
       <div className="page-header">
         <div>
-          <h2 className="page-title">🚨 Real-Time Risk & Explainable Movement Alerts</h2>
-          <p className="page-subtitle">Pench Tiger Reserve — Explainable Deviation Engine & Notification System</p>
+          <h2 className="page-title">Alerts</h2>
+          <p className="page-subtitle">Movement deviation alerts and risk notifications</p>
         </div>
         <div className="tab-buttons">
           <button className={`tab-btn ${activeTab === 'active-alerts' ? 'active' : ''}`} onClick={() => setActiveTab('active-alerts')}>

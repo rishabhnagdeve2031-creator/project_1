@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Polygon, Popup, Tooltip, Marker, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { ANIMALS, SPECIES_LABELS } from '../data/animals';
+import { ANIMALS } from '../data/animals';
 import { useSimulationEngine } from '../hooks/useSimulationEngine';
 import { useAppContext } from '../context/AppContext';
 
@@ -95,8 +95,13 @@ function AnimalMarkerComponent({ animal, isSelected, onSelect }) {
 export default function LiveMap() {
   const { tigerProfiles, runs, cameras } = useAppContext();
   const [activeTab, setActiveTab] = useState('map'); // 'map' | 'history-runs'
+  const [filterTigerId, setFilterTigerId] = useState('all');
   const initialCenter = [21.73, 79.31];
   const initialZoom = 11;
+
+  const filteredTigerProfiles = filterTigerId === 'all'
+    ? tigerProfiles
+    : tigerProfiles.filter(t => t.id === filterTigerId);
 
   const {
     tigers: animals,
@@ -131,9 +136,30 @@ export default function LiveMap() {
           </button>
         </div>
 
-        <div className="status-display">
-          <span className="status-badge count">{animals.length} Tigers Tracked</span>
-          <span className="status-badge proto">PROTOTYPE GEOSPATIAL MAP</span>
+        <div className="status-display" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="tiger-filter-selector" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span className="font-mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>🐅 Corridor Filter:</span>
+            <select
+              value={filterTigerId}
+              onChange={(e) => setFilterTigerId(e.target.value)}
+              style={{
+                padding: '4px 10px',
+                borderRadius: '6px',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-subtle)',
+                color: 'var(--text-bright)',
+                fontSize: '11px',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              <option value="all">All Tigers Corridors</option>
+              {tigerProfiles.map(t => (
+                <option key={t.id} value={t.id}>{t.id} - {t.name}</option>
+              ))}
+            </select>
+          </div>
+          <span className="status-badge count">{filteredTigerProfiles.length} / {tigerProfiles.length} Tigers</span>
         </div>
       </div>
 
@@ -166,8 +192,8 @@ export default function LiveMap() {
               <Tooltip sticky>Pench Core Protected Area</Tooltip>
             </Polygon>
 
-            {/* Addition 10: Tiger Home Range Polygons & Centroid Markers */}
-            {tigerProfiles.map(tiger => (
+            {/* Tiger Home Range Polygons & Centroid Markers */}
+            {filteredTigerProfiles.map(tiger => (
               <React.Fragment key={`hr-${tiger.id}`}>
                 {tiger.homeRangePoly && (
                   <Polygon

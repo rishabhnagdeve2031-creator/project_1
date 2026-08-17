@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python & AI Models
+__pycache__/
+*.pyc
+runs/
+*.pt
+
+

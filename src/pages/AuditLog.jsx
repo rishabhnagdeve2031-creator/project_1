@@ -19,8 +19,8 @@ export default function AuditLog() {
     <div className="pg-page">
       <div className="page-header">
         <div>
-          <h2 className="page-title">📜 Audit Log & System Trace</h2>
-          <p className="page-subtitle">Pench Tiger Reserve — Complete Event History of AI Decisions & Human Operator Corrections</p>
+          <h2 className="page-title">Audit Log</h2>
+          <p className="page-subtitle">System event history and operator actions</p>
         </div>
       </div>
 

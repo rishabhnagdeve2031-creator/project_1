@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 
 export default function Observations() {
-  const { observations, tigerProfiles, cameras } = useAppContext();
+  const { observations, tigerProfiles } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTigerFilter, setSelectedTigerFilter] = useState('all');
   const [selectedZoneFilter, setSelectedZoneFilter] = useState('all');
@@ -22,8 +22,8 @@ export default function Observations() {
     <div className="pg-page">
       <div className="page-header">
         <div>
-          <h2 className="page-title">📋 Camera Trap Observations Log</h2>
-          <p className="page-subtitle">Pench Tiger Reserve — Searchable Telemetry & Sightings Records ({observations.length} Total Logs)</p>
+          <h2 className="page-title">Observations</h2>
+          <p className="page-subtitle">Sighting records ({observations.length} total)</p>
         </div>
       </div>
 

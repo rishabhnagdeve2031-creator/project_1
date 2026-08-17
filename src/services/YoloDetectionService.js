@@ -15,17 +15,21 @@ export class YoloDetectionService {
       const response = await fetch(`${this.BACKEND_URL}/status`, { method: 'GET' });
       if (response.ok) {
         const data = await response.json();
-        return data; // { connected: bool, model_path: string, status: string, message: string }
+        return data; // { connected, status, model_name, model_path, model_type, class_names, device, message }
       }
-    } catch (e) {
+    } catch {
       // Backend server not running
     }
     return {
       connected: false,
       status: 'offline',
+      model_name: 'best.pt',
       model_path: null,
-      expected_paths: ['models/best.pt', 'models/last.pt', 'models/yolo26n.pt'],
-      message: 'REAL AI MODEL NOT CONNECTED. Expected model path: models/best.pt'
+      model_type: 'Trained Tiger Detector',
+      class_names: [],
+      device: 'UNKNOWN',
+      expected_paths: ['C:/Users/VICTUS/OneDrive/Desktop/tiger train dataset/runs/detect/tigers2_train-2/weights/best.pt', 'models/best.pt'],
+      message: 'YOLO OFFLINE — Model Load Error'
     };
   }
 
@@ -47,21 +51,31 @@ export class YoloDetectionService {
         return {
           success: true,
           connected: true,
+          model: data.model || 'best.pt',
           modelPath: data.model_path,
-          detections: data.detections,
-          processingTimeMs: data.processing_time_ms,
+          device: data.device || 'CPU',
+          detections: data.detections || [],
+          inferenceTimeMs: data.inference_time_ms || data.processing_time_ms || 0,
+          processingTimeMs: data.processing_time_ms || data.inference_time_ms || 0,
           width: data.width,
           height: data.height
         };
+      } else {
+        const errData = await response.json().catch(() => ({}));
+        return {
+          success: false,
+          connected: false,
+          message: errData.message || errData.error || 'YOLO OFFLINE — Model Load Error'
+        };
       }
-    } catch (e) {
+    } catch {
       // Backend call failed
     }
 
     return {
       success: false,
       connected: false,
-      message: 'REAL AI MODEL NOT CONNECTED. Place best.pt in project models/ folder and run python server.py.'
+      message: 'YOLO OFFLINE — Backend connection failed. Ensure python server.py is running.'
     };
   }
 

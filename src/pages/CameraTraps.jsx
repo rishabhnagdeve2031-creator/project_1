@@ -15,8 +15,8 @@ export default function CameraTraps() {
     <div className="pg-page">
       <div className="page-header">
         <div>
-          <h2 className="page-title">📷 Camera Trap Network</h2>
-          <p className="page-subtitle">Pench Tiger Reserve — {cameras.length} Cameras Deployed</p>
+          <h2 className="page-title">Camera Traps</h2>
+          <p className="page-subtitle">{cameras.length} cameras deployed</p>
         </div>
         <div className="filter-group">
           {['all', 'online', 'offline', 'Core Zone', 'Buffer Zone', 'Boundary Zone'].map(f => (

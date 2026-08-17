@@ -1,24 +1,40 @@
 import React from 'react';
 
-export default function Sidebar({ activePage, setActivePage }) {
+export default function Sidebar({ activePage, setActivePage, isOpen = false, onClose }) {
   const menuItems = [
-    { id: 'dashboard', label: '📊 Dashboard' },
-    { id: 'batch-processing', label: '📁 Batch Processing' },
-    { id: 'camera-traps', label: '📷 Camera Traps' },
-    { id: 'ai-triage', label: '🔬 AI Triage' },
-    { id: 'tiger-intelligence', label: '🐅 Individual Tigers' },
-    { id: 'movement-map', label: '🗺 Movement Intelligence' },
-    { id: 'observations', label: '📋 Observations' },
-    { id: 'alerts', label: '🚨 Alerts' },
-    { id: 'audit-log', label: '📜 Audit Log' },
-    { id: 'analytics', label: '📈 Analytics' },
-    { id: 'system-health', label: '⚙ System Health' }
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'batch-processing', label: 'Batch Processing' },
+    { id: 'camera-traps', label: 'Camera Traps' },
+    { id: 'ai-triage', label: 'AI Triage' },
+    { id: 'tiger-intelligence', label: 'Individual Tigers' },
+    { id: 'movement-map', label: 'Movement Intelligence' },
+    { id: 'observations', label: 'Observations' },
+    { id: 'alerts', label: 'Alerts' },
+    { id: 'audit-log', label: 'Audit Log' },
+    { id: 'analytics', label: 'Analytics' },
+    { id: 'system-health', label: 'System Health' }
   ];
 
+  const handleSelect = (e, id) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setActivePage(id);
+    if (onClose) {
+      onClose();
+    }
+  };
+
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
       <div className="sidebar-header">
-        <span className="sidebar-section-title font-mono">NAVIGATION MENU</span>
+        <span className="sidebar-section-title font-mono">MENU</span>
+        {onClose && (
+          <button className="sidebar-close-btn" onClick={onClose} title="Close Menu (✕)">
+            ✕
+          </button>
+        )}
       </div>
 
       <nav className="sidebar-nav">
@@ -27,7 +43,7 @@ export default function Sidebar({ activePage, setActivePage }) {
           return (
             <button
               key={item.id}
-              onClick={() => setActivePage(item.id)}
+              onClick={(e) => handleSelect(e, item.id)}
               className={`nav-item ${isActive ? 'active' : ''}`}
             >
               <div className="nav-item-content">
@@ -41,6 +57,8 @@ export default function Sidebar({ activePage, setActivePage }) {
 
       <style>{`
         .sidebar {
+          position: relative;
+          z-index: 50;
           width: 260px;
           height: 100%;
           background-color: var(--bg-sidebar);
@@ -50,10 +68,25 @@ export default function Sidebar({ activePage, setActivePage }) {
           padding: 20px 12px;
           user-select: none;
           flex-shrink: 0;
+          transition: width 0.3s ease, padding 0.3s ease, opacity 0.25s ease;
+          overflow-x: hidden;
+          overflow-y: auto;
+        }
+
+        .sidebar.closed {
+          width: 0px;
+          padding-left: 0px;
+          padding-right: 0px;
+          opacity: 0;
+          pointer-events: none;
+          border-right-color: transparent;
         }
 
         .sidebar-header {
           padding: 0 12px 12px 12px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
         }
 
         .sidebar-section-title {
@@ -61,6 +94,27 @@ export default function Sidebar({ activePage, setActivePage }) {
           font-weight: 600;
           color: var(--text-dim);
           letter-spacing: 1px;
+        }
+
+        .sidebar-close-btn {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          color: var(--text-muted);
+          width: 24px;
+          height: 24px;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          font-size: 12px;
+          transition: all 0.2s;
+        }
+
+        .sidebar-close-btn:hover {
+          background: rgba(239, 68, 68, 0.2);
+          color: #f87171;
+          border-color: rgba(239, 68, 68, 0.4);
         }
 
         .sidebar-nav {

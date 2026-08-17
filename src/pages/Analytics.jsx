@@ -2,8 +2,7 @@ import React from 'react';
 import {
   DETECTION_CHART_DATA,
   ZONE_DISTRIBUTION,
-  CAMERA_ACTIVITY_DATA,
-  ALERTS_TREND
+  CAMERA_ACTIVITY_DATA
 } from '../data/demoData';
 
 export default function Analytics() {
@@ -11,17 +10,17 @@ export default function Analytics() {
     <div className="pg-page">
       <div className="page-header">
         <div>
-          <h2 className="page-title">📈 Wildlife Intelligence Analytics</h2>
-          <p className="page-subtitle">Pench Tiger Reserve — Spatial Trends & Detection Statistics</p>
+          <h2 className="page-title">Analytics</h2>
+          <p className="page-subtitle">Spatial trends and detection statistics</p>
         </div>
-        <div className="proto-badge">DEMO DATA</div>
+        <div className="proto-badge">Sample Data</div>
       </div>
 
       <div className="analytics-grid">
         {/* Weekly Detections Bar Chart */}
         <div className="chart-card">
           <div className="chart-header">
-            <h4>🐅 Tiger Detections Over Time (7 Days)</h4>
+            <h4>Tiger Detections (7 Days)</h4>
           </div>
           <div className="bar-chart-container">
             {DETECTION_CHART_DATA.map((item, idx) => (
@@ -39,7 +38,7 @@ export default function Analytics() {
         {/* Zone Distribution Donut Visualizer */}
         <div className="chart-card">
           <div className="chart-header">
-            <h4>📍 Tiger Observations by Zone</h4>
+            <h4>Observations by Zone</h4>
           </div>
           <div className="zone-dist-list">
             {ZONE_DISTRIBUTION.map((item, idx) => (
