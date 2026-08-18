@@ -1,146 +1,120 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { YoloDetectionService } from '../services/YoloDetectionService';
+import { BackendService } from '../services/api/Services';
 
 export default function BatchProcessing() {
-  const { quarantine, confirmBlankQuarantine, restoreFromQuarantine, recordRealBatchStats, addAuditEntry, isRealMode, backendStatus } = useAppContext();
-  const [activeTab, setActiveTab] = useState('upload');
+  const { quarantine, confirmBlankQuarantine, restoreFromQuarantine, refreshRealData, isRealMode, backendStatus } = useAppContext();
+  const [activeTab, setActiveTab] = useState('upload'); // 'upload' | 'quarantine' | 'results' | 'history'
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [processedCount, setProcessedCount] = useState(0);
 
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [batchSummary, setBatchSummary] = useState(null);
+  const [batchHistory, setBatchHistory] = useState([]);
+  const [forceReprocess, setForceReprocess] = useState(false);
+
+  useEffect(() => {
+    async function loadBatches() {
+      if (isRealMode) {
+        const batches = await BackendService.getBatches();
+        setBatchHistory(batches);
+      }
+    }
+    loadBatches();
+  }, [isRealMode, isProcessing]);
 
   const handleFolderSelect = (e) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length > 0) {
-      setSelectedFiles(files);
+    const rawFiles = Array.from(e.target.files || []);
+    // Filter for valid image file extensions
+    const imageFiles = rawFiles.filter(f => 
+      f.type?.startsWith('image/') || /\.(jpe?g|png|webp|bmp|tiff?)$/i.test(f.name)
+    );
+    if (imageFiles.length > 0) {
+      setSelectedFiles(imageFiles);
       setBatchSummary(null);
+    } else if (rawFiles.length > 0) {
+      alert('No valid image files (.jpg, .png, .webp) found in selected directory.');
     }
   };
 
   const startBatchProcessing = async () => {
     if (selectedFiles.length === 0 && isRealMode) {
-      alert('Please select or upload real camera-trap images/folders to process.');
+      alert('Please select camera-trap images or a folder to process.');
       return;
     }
 
     setIsProcessing(true);
-    setProgress(0);
+    setProgress(10);
     setProcessedCount(0);
 
-    const total = selectedFiles.length || 100;
-    addAuditEntry('Batch Processor', 'Real Batch Started', `Processing ${total} real camera trap images`, `Mode: ${isRealMode ? 'REAL DATA MODE' : 'DEMO MODE'}`);
-
-    let processed = 0;
-    let blankCount = 0;
-    let usefulCount = 0;
-    let tigerCount = 0;
-    let otherCount = 0;
-
-    const newQuarantineItems = [];
-    const detectedCameraIds = new Set();
-
-    for (let i = 0; i < total; i++) {
-      const file = selectedFiles[i];
-      if (file) {
-        const meta = YoloDetectionService.parseImageMetadata(file, file.webkitRelativePath);
-        if (meta.cameraId !== 'UNKNOWN') detectedCameraIds.add(meta.cameraId);
-
-        // Run detection if backend is online
-        if (backendStatus.connected) {
-          const res = await YoloDetectionService.detectImage(file);
-          if (res.success && res.detections.length > 0) {
-            const isTiger = res.detections.some(d => d.label.toLowerCase().includes('tiger'));
-            if (isTiger) {
-              tigerCount++;
-              usefulCount++;
-            } else {
-              otherCount++;
-              usefulCount++;
-            }
-          } else {
-            blankCount++;
-            newQuarantineItems.push({
-              id: `Q-R${Date.now()}-${i}`,
-              fileName: file.name,
-              cameraId: meta.cameraId,
-              timestamp: meta.timestamp,
-              blankConfidence: 96.5,
-              reason: 'No animal pixels detected by YOLO model',
-              status: 'quarantined'
-            });
-          }
-        } else {
-          // If model is offline, simulate blank / subject split based on filename
-          if (file.name.toLowerCase().includes('blank') || i % 3 === 0) {
-            blankCount++;
-            newQuarantineItems.push({
-              id: `Q-R${Date.now()}-${i}`,
-              fileName: file.name,
-              cameraId: meta.cameraId,
-              timestamp: meta.timestamp,
-              blankConfidence: 95.0,
-              reason: 'No subject motion detected (Model Offline)',
-              status: 'quarantined'
-            });
-          } else {
-            usefulCount++;
-            if (file.name.toLowerCase().includes('tiger') || i % 5 === 0) tigerCount++;
-            else otherCount++;
-          }
-        }
-      } else {
-        // Demo count tick
-        if (i % 4 === 0) usefulCount++;
-        else blankCount++;
-      }
-
-      processed++;
-      setProcessedCount(processed);
-      setProgress(Math.round((processed / total) * 100));
-
-      // Yield UI thread
-      if (i % 5 === 0) await new Promise(r => setTimeout(r, 20));
-    }
-
-    setIsProcessing(false);
-
-    const stats = {
-      processed,
-      blank: blankCount,
-      useful: usefulCount,
-      tiger: tigerCount,
-      other: otherCount,
-      storageSavedGb: parseFloat(((blankCount * 2.5) / 1024).toFixed(2)),
-      timeStr: `${Math.ceil(total * 0.15)}s`,
-      quarantinedItems: newQuarantineItems,
-      camerasFound: Array.from(detectedCameraIds).map(id => ({
-        id, location: `Station ${id}`, lat: 21.73, lng: 79.31, zone: 'Buffer Zone', status: 'online'
-      }))
-    };
-
-    setBatchSummary(stats);
     if (isRealMode) {
-      recordRealBatchStats(stats);
+      // ── Real Backend Processing via /api/batch ──
+      setProgress(30);
+      const res = await BackendService.processBatch(selectedFiles, 'Camera Trap Ingest', forceReprocess);
+      setProgress(100);
+      setIsProcessing(false);
+
+      if (res && res.success) {
+        const stats = {
+          batchId: res.batch_id,
+          total: res.total || selectedFiles.length,
+          processed: res.processed,
+          duplicatesSkipped: res.duplicates_skipped || 0,
+          blank: res.blank_images,
+          useful: res.subject_images,
+          tiger: res.tiger_images,
+          failed: res.failed_images,
+          storageSavedGb: parseFloat(((res.blank_images * 2.5) / 1024).toFixed(2)),
+          processingTimeS: res.processing_time_s,
+          results: res.results || []
+        };
+        setBatchSummary(stats);
+        await refreshRealData();
+        setActiveTab('results');
+      } else {
+        alert(`❌ Batch processing error: ${res?.error || 'Unknown backend error'}`);
+      }
+    } else {
+      // ── Isolated Demo Simulation Mode ──
+      const total = selectedFiles.length || 24;
+      let p = 0;
+      const interval = setInterval(() => {
+        p += 4;
+        setProcessedCount(Math.min(total, p));
+        setProgress(Math.round((Math.min(total, p) / total) * 100));
+        if (p >= total) {
+          clearInterval(interval);
+          setIsProcessing(false);
+          setBatchSummary({
+            batchId: 'DEMO-BATCH-001',
+            processed: total,
+            blank: Math.round(total * 0.7),
+            useful: Math.round(total * 0.3),
+            tiger: Math.round(total * 0.2),
+            failed: 0,
+            storageSavedGb: 0.05,
+            processingTimeS: 2.4,
+            results: []
+          });
+          setActiveTab('results');
+        }
+      }, 150);
     }
-    setActiveTab('results');
-    addAuditEntry('Batch Processor', 'Batch Completed', `Processed ${processed} real images`, `Blank: ${blankCount}, Useful: ${usefulCount}, Tigers: ${tigerCount}`);
   };
 
   return (
     <div className="pg-page">
       <div className="page-header">
         <div>
-          <h2 className="page-title">Batch Processing</h2>
+          <h2 className="page-title">Batch Processing & Ingestion</h2>
           <p className="page-subtitle">
-            Upload folders or images to scan, filter blanks, and detect tigers in bulk.
+            Scan raw camera trap folders, triage blank frames, run YOLO tiger detection, and safely quarantine blanks.
           </p>
         </div>
         <div className="tab-buttons">
           <button className={`tab-btn ${activeTab === 'upload' ? 'active' : ''}`} onClick={() => setActiveTab('upload')}>
-            📥 Upload & Process
+            📥 Upload & Ingest
           </button>
           <button className={`tab-btn ${activeTab === 'quarantine' ? 'active' : ''}`} onClick={() => setActiveTab('quarantine')}>
             🛡 Safe Quarantine ({quarantine.filter(q => q.status === 'quarantined').length})
@@ -148,14 +122,17 @@ export default function BatchProcessing() {
           <button className={`tab-btn ${activeTab === 'results' ? 'active' : ''}`} onClick={() => setActiveTab('results')}>
             📊 Batch Statistics
           </button>
+          <button className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>
+            📜 Batch History ({batchHistory.length})
+          </button>
         </div>
       </div>
 
       {activeTab === 'upload' && (
         <div className="batch-container">
           <div className="upload-section-card">
-            <h3>Select Camera Trap Directory or Files</h3>
-            <p className="sub-text">Scans raw folder hierarchy (e.g. <code>CameraTrap/CT001/IMG001.jpg</code>). Multi-image selection supported.</p>
+            <h3>1. Select Camera Trap Directory or Files</h3>
+            <p className="sub-text">Scans raw folder hierarchy (e.g. <code>CameraTrap/CT001/IMG001.jpg</code>). Automatically parses Station IDs and timestamps.</p>
 
             <div className="file-pickers-row">
               <div className="picker-box">
@@ -179,23 +156,23 @@ export default function BatchProcessing() {
             <div className="prescan-card">
               <div className="prescan-stat">
                 <span className="p-label">Real Files Selected</span>
-                <span className="p-val font-mono">{selectedFiles.length > 0 ? selectedFiles.length : '0 (No files chosen)'}</span>
+                <span className="p-val font-mono">{selectedFiles.length > 0 ? `${selectedFiles.length} file(s)` : '0 (No files chosen)'}</span>
               </div>
               <div className="prescan-stat">
                 <span className="p-label">YOLO Inference Engine</span>
                 <span className={`p-val ${backendStatus.connected ? 'green' : 'orange'}`}>
-                  {backendStatus.connected ? 'Online (best.pt)' : 'Model Not Connected'}
+                  {backendStatus.connected ? 'Online (best.pt)' : 'Model Offline'}
                 </span>
               </div>
               <div className="prescan-stat">
-                <span className="p-label">Mode Active</span>
-                <span className={`p-val ${isRealMode ? 'green' : 'orange'}`}>
-                  {isRealMode ? 'REAL DATA MODE' : 'DEMO MODE'}
+                <span className="p-label">Database Status</span>
+                <span className={`p-val ${backendStatus.connected ? 'green' : 'orange'}`}>
+                  {backendStatus.connected ? 'SQLite Online' : 'Disconnected'}
                 </span>
               </div>
               <div className="prescan-stat">
                 <span className="p-label">Pipeline Status</span>
-                <span className="p-val orange">{isProcessing ? 'Processing Batch...' : 'Ready'}</span>
+                <span className="p-val orange">{isProcessing ? 'Processing Batch...' : 'Ready to Ingest'}</span>
               </div>
             </div>
 
@@ -210,23 +187,35 @@ export default function BatchProcessing() {
                   <div className="progress-bar-fill" style={{ width: `${progress}%` }}></div>
                 </div>
                 <div className="pipeline-steps-status font-mono">
-                  RAW IMAGE → BLANK FILTERING → YOLO MODEL INFERENCE → TIGER CROP → OBSERVATION STREAM
+                  RAW INGESTION → EXIF & HASHING → YOLOv8 DETECTION → EVIDENCE CROPPING → SQLITE PERSISTENCE
                 </div>
               </div>
             )}
 
             {!isProcessing && (
-              <button
-                className="start-batch-btn"
-                onClick={startBatchProcessing}
-                disabled={selectedFiles.length === 0 && isRealMode}
-              >
-                {selectedFiles.length > 0
-                  ? `▶ Process ${selectedFiles.length} Real Images`
-                  : isRealMode
-                  ? '⚠️ Select files or folder to start real batch processing'
-                  : '▶ Run Demo Batch Processing'}
-              </button>
+              <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-secondary, #94a3b8)' }}>
+                  <input
+                    type="checkbox"
+                    checked={forceReprocess}
+                    onChange={(e) => setForceReprocess(e.target.checked)}
+                    style={{ accentColor: '#10b981', width: '16px', height: '16px' }}
+                  />
+                  <span>🔁 Force Re-process (Re-run YOLO AI Detection even if files were uploaded previously)</span>
+                </label>
+
+                <button
+                  className="start-batch-btn"
+                  onClick={startBatchProcessing}
+                  disabled={selectedFiles.length === 0 && isRealMode}
+                >
+                  {selectedFiles.length > 0
+                    ? `▶ Start Ingestion & YOLOv8 Processing (${selectedFiles.length} Images)`
+                    : isRealMode
+                    ? '⚠️ Select files or folder to start real batch processing'
+                    : '▶ Run Demo Batch Simulation'}
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -237,52 +226,62 @@ export default function BatchProcessing() {
         <div className="quarantine-container">
           <div className="quarantine-header-card">
             <div>
-              <h3>🛡 Safe Quarantine Area (Reversible Deletion)</h3>
-              <p>Blank images are stored in quarantine rather than permanently deleted to prevent accidental loss of subtle wildlife sightings.</p>
+              <h3>🛡 Safe Quarantine Area (Reversible Blank Storage)</h3>
+              <p>Images without wildlife detections are stored in quarantine rather than permanently deleted to prevent accidental loss of subtle tiger sightings.</p>
             </div>
           </div>
 
           <div className="quarantine-grid">
-            {quarantine.map(item => (
-              <div key={item.id} className={`quarantine-card ${item.status}`}>
-                <div className="q-image-placeholder">
-                  <span className="q-icon">🍃</span>
-                  <span className="q-filename">{item.fileName}</span>
-                </div>
-                <div className="q-details">
-                  <div className="q-row">
-                    <span className="q-cam font-mono">{item.cameraId}</span>
-                    <span className="q-time">{item.timestamp}</span>
-                  </div>
-                  <div className="q-conf">
-                    Blank Confidence: <strong className="green">{item.blankConfidence}%</strong>
-                  </div>
-                  <div className="q-reason">{item.reason}</div>
+            {quarantine.map(item => {
+              const qId = item.id;
+              const fname = item.filename || item.fileName;
+              const camId = item.camera_id || item.cameraId;
+              const ts = item.timestamp;
+              const conf = item.blank_confidence || item.blankConfidence || 95.0;
+              const reason = item.reason || 'No animal pixels detected by YOLO model';
+              const st = item.status;
 
-                  <div className="q-actions">
-                    {item.status === 'quarantined' && (
-                      <>
-                        <button className="q-btn confirm" onClick={() => confirmBlankQuarantine(item.id)}>
-                          ✓ Confirm Blank
-                        </button>
-                        <button className="q-btn restore" onClick={() => restoreFromQuarantine(item.id)}>
-                          ↺ Restore to Stream
-                        </button>
-                      </>
-                    )}
-                    {item.status === 'confirmed_blank' && (
-                      <span className="q-status-tag confirmed">Confirmed Blank (Safe Delete Ready)</span>
-                    )}
-                    {item.status === 'restored' && (
-                      <span className="q-status-tag restored">Restored to Active Stream</span>
-                    )}
+              return (
+                <div key={qId} className={`quarantine-card ${st}`}>
+                  <div className="q-image-placeholder">
+                    <span className="q-icon">🍃</span>
+                    <span className="q-filename">{fname}</span>
+                  </div>
+                  <div className="q-details">
+                    <div className="q-row">
+                      <span className="q-cam font-mono">{camId}</span>
+                      <span className="q-time">{ts}</span>
+                    </div>
+                    <div className="q-conf">
+                      Blank Confidence: <strong className="green">{conf}%</strong>
+                    </div>
+                    <div className="q-reason">{reason}</div>
+
+                    <div className="q-actions">
+                      {st === 'quarantined' && (
+                        <>
+                          <button className="q-btn confirm" onClick={() => confirmBlankQuarantine(qId)}>
+                            ✓ Confirm Blank
+                          </button>
+                          <button className="q-btn restore" onClick={() => restoreFromQuarantine(qId)}>
+                            ↺ Restore to Stream
+                          </button>
+                        </>
+                      )}
+                      {st === 'confirmed_blank' && (
+                        <span className="q-status-tag confirmed">Confirmed Blank (Safe Delete Ready)</span>
+                      )}
+                      {st === 'restored' && (
+                        <span className="q-status-tag restored">Restored to Active Stream</span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {quarantine.length === 0 && (
-              <div className="empty-state">No quarantined images in queue.</div>
+              <div className="empty-state">No quarantined images in queue. All images currently classified as active subjects.</div>
             )}
           </div>
         </div>
@@ -294,7 +293,7 @@ export default function BatchProcessing() {
           <div className="stats-summary-card">
             <h3>📊 Batch Processing Statistics</h3>
             <span className={`proto-badge ${isRealMode ? 'real' : 'demo'}`}>
-              {isRealMode ? 'REAL BATCH RESULTS' : 'DEMO BATCH RESULTS'}
+              {isRealMode ? 'REAL BATCH RESULTS' : 'DEMO SIMULATION RESULTS'}
             </span>
 
             {batchSummary ? (
@@ -302,31 +301,39 @@ export default function BatchProcessing() {
                 <div className="s-card highlight">
                   <span className="s-icon">🖼</span>
                   <span className="s-val font-mono">{batchSummary.processed}</span>
-                  <span className="s-label">Total Images Processed</span>
+                  <span className="s-label">New Images Ingested</span>
                 </div>
+
+                {batchSummary.duplicatesSkipped > 0 && (
+                  <div className="s-card other">
+                    <span className="s-icon">🔁</span>
+                    <span className="s-val font-mono">{batchSummary.duplicatesSkipped}</span>
+                    <span className="s-label">Duplicates Skipped (Hash Match)</span>
+                  </div>
+                )}
 
                 <div className="s-card blank">
                   <span className="s-icon">🍃</span>
                   <span className="s-val font-mono">{batchSummary.blank}</span>
-                  <span className="s-label">Blank Images Quarantined</span>
+                  <span className="s-label">Blank Frames Quarantined</span>
                 </div>
 
                 <div className="s-card useful">
                   <span className="s-icon">✅</span>
                   <span className="s-val font-mono">{batchSummary.useful}</span>
-                  <span className="s-label">Useful Wildlife Images</span>
+                  <span className="s-label">Useful Wildlife Sightings</span>
                 </div>
 
                 <div className="s-card tiger">
                   <span className="s-icon">🐅</span>
                   <span className="s-val font-mono">{batchSummary.tiger}</span>
-                  <span className="s-label">Tiger Detections</span>
+                  <span className="s-label">Tiger Detections (best.pt)</span>
                 </div>
 
                 <div className="s-card other">
-                  <span className="s-icon">🦌</span>
-                  <span className="s-val font-mono">{batchSummary.other}</span>
-                  <span className="s-label">Other Animals</span>
+                  <span className="s-icon">⚡</span>
+                  <span className="s-val font-mono">{batchSummary.processingTimeS}s</span>
+                  <span className="s-label">Total Processing Time</span>
                 </div>
 
                 <div className="s-card storage">
@@ -342,6 +349,50 @@ export default function BatchProcessing() {
         </div>
       )}
 
+      {/* Batch History */}
+      {activeTab === 'history' && (
+        <div className="history-container">
+          <div className="upload-section-card">
+            <h3>📜 Ingestion Batch History</h3>
+            <table className="history-table font-mono" style={{ width: '100%', marginTop: 14, fontSize: 12 }}>
+              <thead>
+                <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                  <th style={{ padding: '8px 12px' }}>Batch ID</th>
+                  <th style={{ padding: '8px 12px' }}>Date</th>
+                  <th style={{ padding: '8px 12px' }}>Source</th>
+                  <th style={{ padding: '8px 12px' }}>Total</th>
+                  <th style={{ padding: '8px 12px' }}>Tigers</th>
+                  <th style={{ padding: '8px 12px' }}>Blanks</th>
+                  <th style={{ padding: '8px 12px' }}>Time</th>
+                  <th style={{ padding: '8px 12px' }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {batchHistory.map(b => (
+                  <tr key={b.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <td style={{ padding: '8px 12px', color: '#60a5fa' }}>{b.id}</td>
+                    <td style={{ padding: '8px 12px' }}>{b.created_at}</td>
+                    <td style={{ padding: '8px 12px' }}>{b.source_name}</td>
+                    <td style={{ padding: '8px 12px' }}>{b.total_images}</td>
+                    <td style={{ padding: '8px 12px', color: '#10b981' }}>{b.tiger_images}</td>
+                    <td style={{ padding: '8px 12px', color: '#9ca3af' }}>{b.blank_images}</td>
+                    <td style={{ padding: '8px 12px' }}>{b.processing_time_s}s</td>
+                    <td style={{ padding: '8px 12px' }}><span className="status-tag">{b.status}</span></td>
+                  </tr>
+                ))}
+                {batchHistory.length === 0 && (
+                  <tr>
+                    <td colSpan="8" style={{ padding: 24, textAlign: 'center', color: '#64748b' }}>
+                      No batches logged yet. Upload files to run an ingestion batch.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       <style>{`
         .pg-page { padding: 20px 24px; overflow-y: auto; height: 100%; }
         .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
@@ -352,7 +403,7 @@ export default function BatchProcessing() {
         .tab-btn { padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border-subtle); background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 12px; cursor: pointer; transition: all 0.2s; font-weight: 600; }
         .tab-btn.active { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.4); color: #34d399; }
 
-        .batch-container, .quarantine-container, .stats-container { display: flex; flex-direction: column; gap: 20px; }
+        .batch-container, .quarantine-container, .stats-container, .history-container { display: flex; flex-direction: column; gap: 20px; }
         .upload-section-card, .quarantine-header-card, .stats-summary-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 20px; }
 
         .file-pickers-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }

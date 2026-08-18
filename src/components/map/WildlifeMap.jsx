@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Eye, Shield, Compass, Waves, Activity } from 'lucide-react';
+import { Eye, Activity } from 'lucide-react';
 
 const WildlifeMap = () => {
   const [activeMarker, setActiveMarker] = useState(null);

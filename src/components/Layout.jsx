@@ -15,7 +15,7 @@ export default function Layout({ activePage, setActivePage, children }) {
 
   return (
     <div className="layout-shell">
-      <Navbar isMenuOpen={isMenuOpen} onToggleMenu={toggleMenu} />
+      <Navbar isMenuOpen={isMenuOpen} onToggleMenu={toggleMenu} onNavigate={setActivePage} />
       <div className="layout-body">
         {/* Backdrop overlay for closing menu when clicking outside */}
         {isMenuOpen && (

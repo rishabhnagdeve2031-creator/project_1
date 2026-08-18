@@ -1,9 +1,15 @@
+import os
 import csv
 
-csv_path = r"C:\Users\VICTUS\OneDrive\Desktop\tiger train dataset\runs\detect\tigers2_train-2\results.csv"
-with open(csv_path) as f:
-    reader = csv.DictReader(f)
-    rows = list(reader)
+csv_path = os.environ.get("PENCH_RESULTS_CSV", os.path.join("runs", "detect", "tigers2_train-2", "results.csv"))
+if os.path.exists(csv_path):
+    with open(csv_path) as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+else:
+    print(f"File not found: {csv_path}")
+    rows = []
+
 
 print(f"Total epochs trained: {len(rows)}")
 print()

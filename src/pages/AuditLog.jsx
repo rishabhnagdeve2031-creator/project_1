@@ -2,16 +2,21 @@ import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 
 export default function AuditLog() {
-  const { auditLog } = useAppContext();
+  const { auditLog, isRealMode } = useAppContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [actorFilter, setActorFilter] = useState('all');
 
   const filtered = auditLog.filter(item => {
-    const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.details.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const act = item.actor || '';
+    const action = item.action || item.title || '';
+    const details = item.details || '';
+    const id = item.id || '';
 
-    const matchesActor = actorFilter === 'all' || item.actor === actorFilter;
+    const matchesSearch = action.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      details.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      id.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesActor = actorFilter === 'all' || act === actorFilter;
     return matchesSearch && matchesActor;
   });
 
@@ -19,15 +24,17 @@ export default function AuditLog() {
     <div className="pg-page">
       <div className="page-header">
         <div>
-          <h2 className="page-title">Audit Log</h2>
-          <p className="page-subtitle">System event history and operator actions</p>
+          <h2 className="page-title">Persistent Audit Trail</h2>
+          <p className="page-subtitle">
+            {isRealMode ? 'Real SQLite Audit Log Records' : 'Demo Action History'} ({auditLog.length} events logged)
+          </p>
         </div>
       </div>
 
       <div className="audit-controls">
         <input
           type="text"
-          placeholder="🔍 Search action title, details, or ID..."
+          placeholder="🔍 Search action, details, entity, or ID..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="search-input"
@@ -35,34 +42,43 @@ export default function AuditLog() {
 
         <select value={actorFilter} onChange={(e) => setActorFilter(e.target.value)} className="actor-select">
           <option value="all">Filter by Actor (All)</option>
-          <option value="AI System">AI System / Pipeline</option>
+          <option value="System">System</option>
           <option value="Human Operator">Human Operator</option>
-          <option value="DeviationEngine">DeviationEngine</option>
-          <option value="Demo Runner">Demo Runner</option>
+          <option value="Batch Processor">Batch Processor</option>
+          <option value="YOLO Inference">YOLO Inference</option>
+          <option value="Forest Officer">Forest Officer</option>
         </select>
       </div>
 
       <div className="audit-timeline-card">
         <div className="timeline-list">
-          {filtered.map(item => (
-            <div key={item.id} className={`audit-item actor-${item.actor.toLowerCase().replace(' ', '-')}`}>
-              <div className="audit-time font-mono">{item.timestamp}</div>
+          {filtered.map(item => {
+            const aId = item.id;
+            const aTime = item.timestamp;
+            const aActor = item.actor || 'System';
+            const aAction = item.action || item.title || 'ACTION_LOGGED';
+            const aDetails = item.details || '';
+            const aEntity = item.entity_type || 'Event';
 
-              <div className="audit-dot"></div>
+            return (
+              <div key={aId} className="audit-item">
+                <div className="audit-time font-mono">{aTime}</div>
+                <div className={`audit-dot ${aActor.includes('Human') ? 'human' : 'ai'}`}></div>
 
-              <div className="audit-body">
-                <div className="audit-title-row">
-                  <span className="audit-title">{item.title}</span>
-                  <span className={`actor-badge ${item.actor.includes('Human') ? 'human' : 'ai'}`}>
-                    {item.actor}
-                  </span>
-                  <span className="audit-type-tag">{item.type}</span>
-                  <span className="audit-id font-mono">{item.id}</span>
+                <div className="audit-body">
+                  <div className="audit-title-row">
+                    <span className="audit-title">{aAction}</span>
+                    <span className={`actor-badge ${aActor.includes('Human') ? 'human' : 'ai'}`}>
+                      {aActor}
+                    </span>
+                    <span className="audit-type-tag font-mono">{aEntity}</span>
+                    <span className="audit-id font-mono">{aId}</span>
+                  </div>
+                  <div className="audit-details">{aDetails}</div>
                 </div>
-                <div className="audit-details">{item.details}</div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {filtered.length === 0 && (
             <div className="empty-audit">No audit entries match current filter parameters.</div>
@@ -93,14 +109,13 @@ export default function AuditLog() {
         .timeline-list { display: flex; flex-direction: column; gap: 16px; position: relative; }
 
         .audit-item { display: flex; gap: 16px; align-items: flex-start; position: relative; }
-        .audit-time { font-size: 11px; color: var(--text-dim); width: 110px; flex-shrink: 0; text-align: right; pt: 2px; }
+        .audit-time { font-size: 11px; color: var(--text-dim); width: 140px; flex-shrink: 0; text-align: right; pt: 2px; }
 
         .audit-dot {
           width: 10px; height: 10px; border-radius: 50%; background: #10b981;
           margin-top: 4px; flex-shrink: 0; box-shadow: 0 0 8px #10b98188;
         }
-        .actor-human-operator .audit-dot { background: #f59e0b; box-shadow: 0 0 8px #f59e0b88; }
-        .actor-demo-runner .audit-dot { background: #8b5cf6; box-shadow: 0 0 8px #8b5cf688; }
+        .audit-dot.human { background: #f59e0b; box-shadow: 0 0 8px #f59e0b88; }
 
         .audit-body {
           flex: 1; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
@@ -108,7 +123,7 @@ export default function AuditLog() {
         }
 
         .audit-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-        .audit-title { font-size: 13px; font-weight: 700; color: var(--text-bright); }
+        .audit-title { font-size: 13px; font-weight: 700; color: var(--text-bright); font-family: var(--font-mono); }
         .actor-badge { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
         .actor-badge.ai { background: rgba(16,185,129,0.15); color: #34d399; }
         .actor-badge.human { background: rgba(245,158,11,0.15); color: #fbbf24; }

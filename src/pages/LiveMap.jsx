@@ -379,9 +379,6 @@ function playLoudWarningAlarm() {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════════
 export default function LiveMap() {
   const { tigerProfiles, runs, addAlert } = useAppContext();
   const [activeTab, setActiveTab] = useState('map');

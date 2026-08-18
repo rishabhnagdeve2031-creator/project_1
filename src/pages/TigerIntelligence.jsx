@@ -1,46 +1,48 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
+import { BackendService } from '../services/api/Services';
 
 export default function TigerIntelligence() {
   const { tigerProfiles, observations, humanReview, confirmHumanReviewMatch, enrollNewTiger } = useAppContext();
   const [activeTab, setActiveTab] = useState('catalogue'); // 'catalogue' | 'human-review' | 'enroll'
-  const [selectedTiger, setSelectedTiger] = useState(tigerProfiles[0]);
+  const [selectedTiger, setSelectedTiger] = useState(tigerProfiles[0] || null);
 
   // Form for New Tiger Enrollment
-  const [enrollForm, setEnrollForm] = useState({ name: '', gender: 'Male', age: '~3 years', zone: 'Core Zone', cameraId: 'CT-001' });
+  const [enrollForm, setEnrollForm] = useState({ name: '', gender: 'Male', age: '~3-5 years', zone: 'Core Zone', cameraId: 'CT-001' });
 
-  const activeTigerObs = observations.filter(o => o.tigerId === selectedTiger?.id);
-  const pendingReviews = humanReview.filter(r => r.status === 'pending');
+  // Update selected tiger if changed
+  const currentTiger = selectedTiger || tigerProfiles[0] || null;
+  const activeTigerObs = observations.filter(o => (o.tiger_id || o.tigerId) === currentTiger?.id);
+  const pendingReviews = humanReview || [];
 
-  const handleEnrollSubmit = (e) => {
+  const handleEnrollSubmit = async (e) => {
     e.preventDefault();
     if (!enrollForm.name) return;
-    const newTiger = enrollNewTiger(enrollForm);
+    const newTiger = await enrollNewTiger(enrollForm);
     setSelectedTiger(newTiger);
-    setEnrollForm({ name: '', gender: 'Male', age: '~3 years', zone: 'Core Zone', cameraId: 'CT-001' });
+    setEnrollForm({ name: '', gender: 'Male', age: '~3-5 years', zone: 'Core Zone', cameraId: 'CT-001' });
     setActiveTab('catalogue');
-    alert(`Tiger ${newTiger.id} (${newTiger.name}) enrolled successfully!`);
+    alert(`Tiger ${newTiger?.tiger_id || newTiger?.id || 'TGR-NEW'} enrolled successfully!`);
   };
 
   return (
     <div className="pg-page">
       <div className="page-header">
         <div>
-          <h2 className="page-title">Individual Tigers</h2>
-          <p className="page-subtitle">Tiger profile catalog and stripe identification</p>
+          <h2 className="page-title">Tiger Intelligence & Individual Catalogue</h2>
+          <p className="page-subtitle">
+            Persistent tiger database, stripe re-identification, and human review verification queue.
+          </p>
         </div>
         <div className="tab-buttons">
           <button className={`tab-btn ${activeTab === 'catalogue' ? 'active' : ''}`} onClick={() => setActiveTab('catalogue')}>
-            Catalogue ({tigerProfiles.length})
-          </button>
-          <button className={`tab-btn ${activeTab === 'stripe-matcher' ? 'active' : ''}`} onClick={() => setActiveTab('stripe-matcher')}>
-            🔬 Stripe Pattern Matcher
+            🐅 Tiger Catalogue ({tigerProfiles.length})
           </button>
           <button className={`tab-btn ${activeTab === 'human-review' ? 'active' : ''}`} onClick={() => setActiveTab('human-review')}>
             👁 Human Review Queue ({pendingReviews.length})
           </button>
           <button className={`tab-btn ${activeTab === 'enroll' ? 'active' : ''}`} onClick={() => setActiveTab('enroll')}>
-            ➕ Enroll New Tiger
+            ➕ Enroll Individual
           </button>
         </div>
       </div>
@@ -50,220 +52,247 @@ export default function TigerIntelligence() {
           {/* Tiger Selection Sidebar Cards */}
           <div className="tiger-selector-list">
             {tigerProfiles.map(tiger => {
-              const isSelected = selectedTiger?.id === tiger.id;
+              const tId = tiger.id;
+              const tName = tiger.display_name || tiger.name || `Individual ${tId}`;
+              const tGender = tiger.gender || 'Unknown';
+              const tZone = tiger.zone || 'Core Zone';
+              const tObsCount = tiger.observation_count || tiger.observationCount || 1;
+              const tColor = tiger.color || '#10b981';
+              const isSelected = currentTiger?.id === tId;
+
               return (
                 <div
-                  key={tiger.id}
+                  key={tId}
                   className={`tiger-profile-card ${isSelected ? 'active' : ''}`}
-                  style={{ borderLeftColor: tiger.color }}
+                  style={{ borderLeftColor: tColor }}
                   onClick={() => setSelectedTiger(tiger)}
                 >
                   <div className="card-top">
                     <span className="tiger-avatar">🐅</span>
                     <div>
-                      <h4 className="tiger-card-name">{tiger.name}</h4>
-                      <span className="tiger-card-id">{tiger.id} · {tiger.gender}</span>
+                      <h4 className="tiger-card-name">{tName}</h4>
+                      <span className="tiger-card-id font-mono">{tId} · {tGender}</span>
                     </div>
                   </div>
 
                   <div className="card-info-row">
-                    <span className="info-chip">{tiger.zone}</span>
-                    <span className="info-obs">{tiger.observationCount} Sightings</span>
-                  </div>
-
-                  <div className={`status-pill ${tiger.movementStatus.includes('boundary') ? 'warn' : 'normal'}`}>
-                    {tiger.movementStatus}
+                    <span className="info-chip">{tZone}</span>
+                    <span className="info-obs">{tObsCount} Sighting(s)</span>
                   </div>
                 </div>
               );
             })}
+
+            {tigerProfiles.length === 0 && (
+              <div className="empty-state" style={{ padding: 24 }}>
+                No tiger individuals enrolled yet. Process batches in Batch Processing or enroll individuals via the Enroll tab.
+              </div>
+            )}
           </div>
 
           {/* Main Tiger Detail Dashboard */}
-          {selectedTiger && (
+          {currentTiger ? (
             <div className="tiger-detail-dashboard">
-              {/* Addition 9: Persistent Tiger Profile */}
-              <div className="tiger-hero-card" style={{ borderColor: selectedTiger.color }}>
-                <div className="hero-avatar" style={{ backgroundColor: `${selectedTiger.color}22`, color: selectedTiger.color }}>
+              <div className="tiger-hero-card" style={{ borderColor: currentTiger.color || '#10b981' }}>
+                <div className="hero-avatar" style={{ backgroundColor: `${currentTiger.color || '#10b981'}22`, color: currentTiger.color || '#10b981' }}>
                   🐅
                 </div>
                 <div className="hero-meta">
                   <div className="hero-title-row">
-                    <h3>{selectedTiger.name}</h3>
-                    <span className="hero-id-badge" style={{ background: selectedTiger.color }}>{selectedTiger.id}</span>
+                    <h3>{currentTiger.display_name || currentTiger.name || `Individual ${currentTiger.id}`}</h3>
+                    <span className="hero-id-badge" style={{ background: currentTiger.color || '#10b981' }}>{currentTiger.id}</span>
                   </div>
-                  <p className="hero-sub">{selectedTiger.gender} · Est. Age: {selectedTiger.age} · First Logged: {selectedTiger.firstSeen}</p>
+                  <p className="hero-sub">{currentTiger.gender} · Est. Age: {currentTiger.age_estimate || currentTiger.age || '~3-5 years'} · First Logged: {currentTiger.first_seen || currentTiger.firstSeen || 'Recent'}</p>
                 </div>
 
                 <div className="hero-stats-group">
                   <div className="h-stat">
-                    <span className="h-label">Current Zone</span>
-                    <span className="h-val">{selectedTiger.zone}</span>
+                    <span className="h-label">Status</span>
+                    <span className="h-val green">Active Profile</span>
                   </div>
                   <div className="h-stat">
-                    <span className="h-label">Occupancy Area</span>
-                    <span className="h-val green font-mono">{selectedTiger.estimatedAreaKm2} km²</span>
+                    <span className="h-label">Estimated Occupancy</span>
+                    <span className="h-val green font-mono">{currentTiger.estimated_area_km2 || currentTiger.estimatedAreaKm2 || 5.0} km²</span>
                   </div>
                   <div className="h-stat">
                     <span className="h-label">Centroid</span>
-                    <span className="h-val font-mono">{selectedTiger.centroid?.lat.toFixed(3)}°N</span>
+                    <span className="h-val font-mono">{currentTiger.centroid_lat || currentTiger.centroid?.lat || 21.738}°N</span>
                   </div>
                   <div className="h-stat">
-                    <span className="h-label">Sightings Logged</span>
-                    <span className="h-val">{selectedTiger.observationCount}</span>
+                    <span className="h-label">Total Sightings</span>
+                    <span className="h-val font-mono">{activeTigerObs.length || currentTiger.observation_count || currentTiger.observationCount || 1}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Addition 6: Flank Extraction & Stripe Pattern Matching Visualizer */}
+              {/* Stripe Matcher / Flank Evidence */}
               <div className="detail-section">
-                <h4>🧬 Stripe Pattern Catalogue Reference</h4>
+                <h4>🔬 Flank Crop Evidence & Stripe Reference</h4>
                 <div className="flank-match-card">
                   <div className="flank-box">
-                    <span className="f-title">Flank Extraction Reference</span>
+                    <span className="f-title">Flank Pattern Snapshot</span>
                     <div className="stripe-pattern-sim">
                       <div className="stripe s1"></div>
                       <div className="stripe s2"></div>
                       <div className="stripe s3"></div>
                     </div>
                   </div>
-                  <div className="flank-meta font-mono">
-                    <div>Stripe Hash ID: <code>SP-{selectedTiger.id}-FLANK99</code></div>
-                    <div>Matching Confidence: <strong className="green">Confirmed Match (Dem-Stripe-Engine)</strong></div>
-                    <div>Reference Camera: {selectedTiger.lastCamera}</div>
+                  <div className="flank-meta font-mono" style={{ fontSize: 11 }}>
+                    <div>Identifier: <code>{currentTiger.id}</code></div>
+                    <div>Detection Model: <strong>YOLOv8 Tiger Detector (best.pt)</strong></div>
+                    <div>Identity Status: <strong className="green">Human-Verified Individual</strong></div>
                   </div>
-                </div>
-              </div>
-
-              {/* Movement Timeline */}
-              <div className="detail-section">
-                <h4>📍 Recent Movement Timeline</h4>
-                <div className="timeline-track">
-                  {selectedTiger.timeline.map((step, idx) => (
-                    <div key={idx} className="timeline-node">
-                      <div className="node-dot" style={{ backgroundColor: selectedTiger.color }}></div>
-                      <div className="node-content">
-                        <span className="node-time">{step.time}</span>
-                        <span className="node-cam">{step.camera}</span>
-                        <span className="node-zone">{step.zone}</span>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               </div>
 
               {/* Sightings Log */}
               <div className="detail-section">
-                <h4>📷 Sightings Log ({activeTigerObs.length} Recent)</h4>
+                <h4>📷 Persistent Sightings Timeline ({activeTigerObs.length} Logged)</h4>
                 <table className="sightings-table">
                   <thead>
                     <tr>
                       <th>Obs ID</th>
                       <th>Timestamp</th>
-                      <th>Camera Station</th>
+                      <th>Camera</th>
                       <th>Zone</th>
-                      <th>AI Confidence</th>
+                      <th>YOLO Confidence</th>
+                      <th>Crop Evidence</th>
                       <th>Status</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {activeTigerObs.map(obs => (
-                      <tr key={obs.id}>
-                        <td className="font-mono">{obs.id}</td>
-                        <td>{obs.timestamp}</td>
-                        <td className="font-mono">{obs.cameraId}</td>
-                        <td><span className="zone-tag">{obs.zone}</span></td>
-                        <td className="font-mono green-text">{obs.confidence}%</td>
-                        <td><span className="status-confirmed">Confirmed Match</span></td>
+                    {activeTigerObs.map(obs => {
+                      const oId = obs.id;
+                      const oTime = obs.timestamp;
+                      const oCam = obs.camera_id || obs.cameraId;
+                      const oZone = obs.zone || 'Core Zone';
+                      const oConf = obs.confidence;
+                      const oCrop = obs.crop_path || obs.cropUrl;
+
+                      return (
+                        <tr key={oId}>
+                          <td className="font-mono">{oId}</td>
+                          <td>{oTime}</td>
+                          <td className="font-mono">{oCam}</td>
+                          <td><span className="zone-tag">{oZone}</span></td>
+                          <td className="font-mono green-text">{oConf}%</td>
+                          <td>
+                            {oCrop ? (
+                              <img src={BackendService.getMediaUrl(oCrop)} alt="Crop" style={{ width: 48, height: 32, objectFit: 'cover', borderRadius: 4 }} />
+                            ) : (
+                              <span style={{ fontSize: 10, color: '#64748b' }}>No Crop</span>
+                            )}
+                          </td>
+                          <td><span className="status-confirmed">Verified</span></td>
+                        </tr>
+                      );
+                    })}
+                    {activeTigerObs.length === 0 && (
+                      <tr>
+                        <td colSpan="7" style={{ textAlign: 'center', color: '#64748b', padding: 24 }}>
+                          No sightings logged for this individual yet.
+                        </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
+          ) : (
+            <div className="empty-state">Select a tiger profile to view intelligence dossier.</div>
           )}
         </div>
       )}
 
-      {/* Addition 8: HUMAN REVIEW QUEUE */}
+      {/* HUMAN REVIEW QUEUE */}
       {activeTab === 'human-review' && (
         <div className="human-review-container">
-          <h3>👁 Ambiguous Stripe Matching Review Queue</h3>
-          <p className="sub-text">When AI stripe pattern confidence falls between 60% - 80%, cases are queued for human verification before updating the tiger database.</p>
+          <div className="upload-section-card">
+            <h3>👁 Ambiguous Sightings & Human Review Queue</h3>
+            <p className="sub-text">YOLO detects tigers, but individual stripe matching requires operator review when no automated high-confidence match is confirmed.</p>
 
-          <div className="review-list">
-            {pendingReviews.map(item => (
-              <div key={item.id} className="review-card">
-                <div className="review-img-box">
-                  <span className="img-icon">🐅</span>
-                  <span className="file-name font-mono">{item.fileName}</span>
-                  <span className="cam-tag font-mono">{item.cameraId}</span>
-                </div>
+            <div className="review-list" style={{ marginTop: 16 }}>
+              {pendingReviews.map((item, idx) => {
+                const obsId = item.id;
+                const camId = item.camera_id || item.cameraId || 'CT-014';
+                const ts = item.timestamp;
+                const conf = item.confidence || 92;
+                const cropUrl = item.crop_path;
 
-                <div className="review-candidates-box">
-                  <div className="review-header font-mono">
-                    <span>{item.id}</span> · <span>{item.timestamp}</span> · <span>Notes: {item.notes}</span>
-                  </div>
-
-                  <div className="candidates-grid">
-                    <div className="cand-card c1">
-                      <span className="cand-rank">Candidate 1 (High Probability)</span>
-                      <span className="cand-name">{item.candidate1.name} ({item.candidate1.id})</span>
-                      <span className="cand-conf">{item.candidate1.confidence}% Match Confidence</span>
-                      <button className="confirm-cand-btn" onClick={() => confirmHumanReviewMatch(item.id, item.candidate1.id)}>
-                        ✓ Confirm {item.candidate1.id}
-                      </button>
+                return (
+                  <div key={obsId || idx} className="review-card" style={{ display: 'flex', gap: 16, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 16, marginBottom: 14 }}>
+                    <div className="review-img-box" style={{ width: 140, height: 95, borderRadius: 6, overflow: 'hidden', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {cropUrl ? (
+                        <img src={BackendService.getMediaUrl(cropUrl)} alt="Crop Evidence" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                      ) : (
+                        <span style={{ fontSize: 32 }}>🐅</span>
+                      )}
                     </div>
 
-                    <div className="cand-card c2">
-                      <span className="cand-rank">Candidate 2 (Secondary Match)</span>
-                      <span className="cand-name">{item.candidate2.name} ({item.candidate2.id})</span>
-                      <span className="cand-conf">{item.candidate2.confidence}% Match Confidence</span>
-                      <button className="confirm-cand-btn" onClick={() => confirmHumanReviewMatch(item.id, item.candidate2.id)}>
-                        ✓ Confirm {item.candidate2.id}
-                      </button>
+                    <div style={{ flex: 1 }}>
+                      <div className="font-mono" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 6 }}>
+                        <span style={{ color: '#60a5fa', fontWeight: 'bold' }}>{obsId}</span>
+                        <span style={{ color: '#94a3b8' }}>{ts}</span>
+                        <span style={{ color: '#34d399' }}>Station: {camId}</span>
+                        <span style={{ color: '#fbbf24' }}>YOLO Conf: {conf}%</span>
+                      </div>
+
+                      <div style={{ fontSize: 12, color: '#cbd5e1', marginBottom: 10 }}>
+                        Status: <strong>Unidentified Individual (Pending Human Review)</strong>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                        {tigerProfiles.map(t => (
+                          <button
+                            key={t.id}
+                            style={{ padding: '6px 12px', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)', borderRadius: 6, color: '#34d399', fontSize: 11, fontWeight: 'bold', cursor: 'pointer' }}
+                            onClick={() => confirmHumanReviewMatch(obsId, t.id)}
+                          >
+                            ✓ Assign to {t.id} ({t.display_name || t.name})
+                          </button>
+                        ))}
+                        <button
+                          style={{ padding: '6px 12px', background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.4)', borderRadius: 6, color: '#f97316', fontSize: 11, fontWeight: 'bold', cursor: 'pointer' }}
+                          onClick={() => setActiveTab('enroll')}
+                        >
+                          ➕ Enroll as New Individual
+                        </button>
+                      </div>
                     </div>
                   </div>
+                );
+              })}
 
-                  <div className="review-alt-actions">
-                    <button className="alt-act-btn enroll" onClick={() => setActiveTab('enroll')}>
-                      ➕ Unmatched — Enroll as New Tiger
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {pendingReviews.length === 0 && (
-              <div className="empty-state">No pending ambiguous cases in Human Review Queue.</div>
-            )}
+              {pendingReviews.length === 0 && (
+                <div className="empty-state">No unassigned tiger sightings in the Human Review Queue. All sightings have been matched or enrolled.</div>
+              )}
+            </div>
           </div>
         </div>
       )}
 
-      {/* Addition 7: NEW TIGER ENROLLMENT FORM */}
+      {/* NEW TIGER ENROLLMENT FORM */}
       {activeTab === 'enroll' && (
         <div className="enroll-container">
           <form className="enroll-card" onSubmit={handleEnrollSubmit}>
-            <h3>➕ Enroll New Tiger Individual into Catalogue</h3>
-            <p className="sub-text">Assigns new unique identifier (e.g. TGR-05) and stores flank reference crop in persistent database.</p>
+            <h3>➕ Enroll New Tiger Individual into Database</h3>
+            <p className="sub-text">Assigns a unique identifier (e.g. TGR-001, TGR-002) and creates a persistent profile in SQLite.</p>
 
             <div className="form-grid">
               <div className="form-group">
-                <label>Tiger Name / Alias</label>
+                <label>Individual Name / Code</label>
                 <input
                   type="text"
-                  placeholder="e.g. Rudra / Collarwali II"
+                  placeholder="e.g. Dominant Male (Collar ID 4)"
                   value={enrollForm.name}
                   onChange={(e) => setEnrollForm({ ...enrollForm, name: e.target.value })}
                   required
-                  className="form-input"
                 />
               </div>
 
               <div className="form-group">
-                <label>Gender</label>
-                <select value={enrollForm.gender} onChange={(e) => setEnrollForm({ ...enrollForm, gender: e.target.value })} className="form-input">
+                <label>Estimated Gender</label>
+                <select value={enrollForm.gender} onChange={(e) => setEnrollForm({ ...enrollForm, gender: e.target.value })}>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
                   <option value="Unknown">Unknown</option>
@@ -271,112 +300,30 @@ export default function TigerIntelligence() {
               </div>
 
               <div className="form-group">
-                <label>Estimated Age</label>
+                <label>Age Estimate</label>
                 <input
                   type="text"
-                  placeholder="e.g. ~3 years"
+                  placeholder="e.g. ~3-5 years"
                   value={enrollForm.age}
                   onChange={(e) => setEnrollForm({ ...enrollForm, age: e.target.value })}
-                  className="form-input"
                 />
               </div>
 
               <div className="form-group">
-                <label>First Station Encountered</label>
-                <select value={enrollForm.cameraId} onChange={(e) => setEnrollForm({ ...enrollForm, cameraId: e.target.value })} className="form-input">
-                  <option value="CT-001">CT-001 - Core Zone A</option>
-                  <option value="CT-003">CT-003 - Core Zone B</option>
-                  <option value="CT-009">CT-009 - Buffer Zone South</option>
-                  <option value="CT-014">CT-014 - Boundary Zone B</option>
-                </select>
+                <label>First Seen Station</label>
+                <input
+                  type="text"
+                  placeholder="e.g. CT-014"
+                  value={enrollForm.cameraId}
+                  onChange={(e) => setEnrollForm({ ...enrollForm, cameraId: e.target.value })}
+                />
               </div>
             </div>
 
             <button type="submit" className="submit-enroll-btn">
-              💾 Enroll New Tiger Profile
+              ✓ Save Tiger Profile to SQLite Database
             </button>
           </form>
-        </div>
-      )}
-
-      {activeTab === 'stripe-matcher' && (
-        <div className="stripe-matcher-container" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 12, padding: 24 }}>
-          <div className="matcher-header" style={{ marginBottom: 20 }}>
-            <h3 style={{ margin: 0, color: 'var(--text-bright)', fontSize: 16 }}>🔬 Side-by-Side Stripe Pattern Re-Identification</h3>
-            <p style={{ margin: '4px 0 0 0', color: 'var(--text-dim)', fontSize: 12 }}>
-              Compare candidate crop flank stripes against baseline individual tiger database profiles using keypoint alignment vectors.
-            </p>
-          </div>
-
-          <div className="matcher-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 120px 1fr', gap: 20, alignItems: 'center' }}>
-            {/* Candidate Flank */}
-            <div className="matcher-box" style={{ background: 'var(--bg-panel)', padding: 16, borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
-              <div style={{ fontSize: 12, fontWeight: 'bold', color: '#60a5fa', marginBottom: 10, display: 'flex', justifyContent: 'space-between' }}>
-                <span>📷 CANDIDATE FLANK (Sighting OBS-104)</span>
-                <span className="font-mono" style={{ color: 'var(--text-dim)' }}>CT-014 · 14:22 PM</span>
-              </div>
-              <div style={{ height: 180, borderRadius: 8, background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed #3b82f6', position: 'relative', overflow: 'hidden' }}>
-                <span style={{ fontSize: 64, opacity: 0.85 }}>🐅</span>
-                <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
-                  <circle cx="80" cy="60" r="4" fill="#34d399" />
-                  <circle cx="140" cy="90" r="4" fill="#34d399" />
-                  <circle cx="200" cy="70" r="4" fill="#34d399" />
-                  <circle cx="110" cy="130" r="4" fill="#34d399" />
-                  <line x1="80" y1="60" x2="140" y2="90" stroke="#34d399" strokeWidth="1.5" strokeDasharray="3 3" />
-                  <line x1="140" y1="90" x2="200" y2="70" stroke="#34d399" strokeWidth="1.5" strokeDasharray="3 3" />
-                  <line x1="140" y1="90" x2="110" y2="130" stroke="#34d399" strokeWidth="1.5" strokeDasharray="3 3" />
-                </svg>
-              </div>
-              <div className="font-mono" style={{ fontSize: 11, marginTop: 10, color: 'var(--text-muted)' }}>
-                Left Flank Stripe Density: <strong>14 Stripes / 22 Keypoints</strong>
-              </div>
-            </div>
-
-            {/* Match Score Indicator */}
-            <div className="match-score-pill" style={{ textCenter: 'center', textAlign: 'center' }}>
-              <div style={{ fontSize: 26, fontWeight: 'bold', color: '#10b981' }}>94.2%</div>
-              <div className="font-mono" style={{ fontSize: 10, color: '#34d399', fontWeight: 'bold' }}>HIGH MATCH</div>
-              <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 4 }}>18 Vectors Aligned</div>
-            </div>
-
-            {/* Reference Flank */}
-            <div className="matcher-box" style={{ background: 'var(--bg-panel)', padding: 16, borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
-              <div style={{ fontSize: 12, fontWeight: 'bold', color: '#34d399', marginBottom: 10, display: 'flex', justifyContent: 'space-between' }}>
-                <span>🐅 DATABASE REFERENCE ({selectedTiger?.id || 'TGR-001'})</span>
-                <span className="font-mono" style={{ color: '#34d399' }}>{selectedTiger?.name || 'Sheru'}</span>
-              </div>
-              <div style={{ height: 180, borderRadius: 8, background: '#0c170c', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #10b981', position: 'relative', overflow: 'hidden' }}>
-                <span style={{ fontSize: 64, opacity: 0.85 }}>🐅</span>
-                <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
-                  <circle cx="75" cy="58" r="4" fill="#34d399" />
-                  <circle cx="138" cy="92" r="4" fill="#34d399" />
-                  <circle cx="198" cy="68" r="4" fill="#34d399" />
-                  <circle cx="112" cy="128" r="4" fill="#34d399" />
-                  <line x1="75" y1="58" x2="138" y2="92" stroke="#34d399" strokeWidth="1.5" />
-                  <line x1="138" y1="92" x2="198" y2="68" stroke="#34d399" strokeWidth="1.5" />
-                  <line x1="138" y1="92" x2="112" y2="128" stroke="#34d399" strokeWidth="1.5" />
-                </svg>
-              </div>
-              <div className="font-mono" style={{ fontSize: 11, marginTop: 10, color: 'var(--text-muted)' }}>
-                Baseline Stripe Profile: <strong>{selectedTiger?.id || 'TGR-001'} ({selectedTiger?.name || 'Sheru'})</strong>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: 12, marginTop: 20, justifyContent: 'flex-end' }}>
-            <button
-              onClick={() => alert(`Confirmed! Sighting linked to ${selectedTiger?.name || 'TGR-001 Sheru'}. Database profile updated.`)}
-              style={{ padding: '8px 16px', borderRadius: 6, background: '#10b981', color: '#fff', border: 'none', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}
-            >
-              ✅ Confirm Stripe Match & Link Sighting
-            </button>
-            <button
-              onClick={() => alert('Flagged as new individual. Added to review queue.')}
-              style={{ padding: '8px 16px', borderRadius: 6, background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', border: '1px solid var(--border-subtle)', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}
-            >
-              ❌ Reject Match / Flag New Tiger
-            </button>
-          </div>
         </div>
       )}
 
@@ -387,117 +334,69 @@ export default function TigerIntelligence() {
         .page-subtitle { font-size: 12px; color: var(--text-dim); margin: 0; }
 
         .tab-buttons { display: flex; gap: 8px; }
-        .tab-btn {
-          padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border-subtle);
-          background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 12px;
-          cursor: pointer; transition: all 0.2s; font-weight: 600;
-        }
+        .tab-btn { padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border-subtle); background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 12px; cursor: pointer; transition: all 0.2s; font-weight: 600; }
         .tab-btn.active { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.4); color: #34d399; }
 
         .tiger-intel-layout { display: grid; grid-template-columns: 280px 1fr; gap: 20px; }
+        .tiger-selector-list { display: flex; flex-direction: column; gap: 10px; max-height: calc(100vh - 180px); overflow-y: auto; }
 
-        .tiger-selector-list { display: flex; flex-direction: column; gap: 12px; }
+        .tiger-profile-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-left: 4px solid #10b981; border-radius: 10px; padding: 14px; cursor: pointer; transition: all 0.2s; }
+        .tiger-profile-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.2); }
+        .tiger-profile-card.active { background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.4); }
 
-        .tiger-profile-card {
-          background: var(--bg-card); border: 1px solid var(--border-subtle);
-          border-left: 4px solid; border-radius: 10px; padding: 14px; cursor: pointer; transition: all 0.2s;
-        }
-        .tiger-profile-card.active { background: rgba(255,255,255,0.04); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .card-top { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
+        .tiger-avatar { font-size: 24px; }
+        .tiger-card-name { font-size: 13px; font-weight: 700; color: var(--text-bright); margin: 0; }
+        .tiger-card-id { font-size: 10px; color: var(--text-dim); }
 
-        .card-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-        .tiger-avatar { font-size: 26px; }
-        .tiger-card-name { font-size: 14px; font-weight: 700; color: var(--text-bright); margin: 0; }
-        .tiger-card-id { font-size: 11px; color: var(--text-dim); }
+        .card-info-row { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); }
+        .info-chip { background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; }
 
-        .card-info-row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 8px; }
-        .info-chip { color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; }
-        .info-obs { color: var(--text-dim); }
-
-        .status-pill {
-          font-size: 10px; font-weight: 600; padding: 4px 8px; border-radius: 4px; text-align: center;
-          background: rgba(16, 185, 129, 0.1); color: #34d399;
-        }
-        .status-pill.warn { background: rgba(239, 68, 68, 0.15); color: #f87171; }
-
-        .tiger-detail-dashboard { display: flex; flex-direction: column; gap: 20px; }
-
-        .tiger-hero-card {
-          background: var(--bg-card); border: 1px solid var(--border-subtle);
-          border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 20px;
-        }
-        .hero-avatar { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; flex-shrink: 0; }
+        .tiger-detail-dashboard { display: flex; flex-direction: column; gap: 16px; }
+        .tiger-hero-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 20px; }
+        .hero-avatar { width: 64px; height: 64px; border-radius: 12px; font-size: 32px; display: flex; align-items: center; justify-content: center; }
         .hero-meta { flex: 1; }
-        .hero-title-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
-        .hero-title-row h3 { font-size: 20px; font-weight: 700; color: var(--text-bright); margin: 0; }
-        .hero-id-badge { font-size: 11px; font-weight: 700; color: #000; padding: 2px 8px; border-radius: 4px; font-family: var(--font-mono); }
-        .hero-sub { font-size: 12px; color: var(--text-dim); margin: 0; }
+        .hero-title-row { display: flex; align-items: center; gap: 10px; }
+        .hero-title-row h3 { font-size: 18px; font-weight: 800; color: var(--text-bright); margin: 0; }
+        .hero-id-badge { font-size: 10px; font-weight: 700; color: #000; padding: 2px 8px; border-radius: 4px; font-family: var(--font-mono); }
+        .hero-sub { font-size: 11px; color: var(--text-dim); margin: 4px 0 0 0; }
 
-        .hero-stats-group { display: flex; gap: 20px; border-left: 1px solid var(--border-subtle); padding-left: 20px; }
-        .h-stat { display: flex; flex-direction: column; }
-        .h-label { font-size: 10px; color: var(--text-dim); margin-bottom: 2px; }
+        .hero-stats-group { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+        .h-stat { display: flex; flex-direction: column; gap: 2px; }
+        .h-label { font-size: 10px; color: var(--text-dim); }
         .h-val { font-size: 13px; font-weight: 700; color: var(--text-bright); }
         .h-val.green { color: #10b981; }
 
         .detail-section { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 18px; }
-        .detail-section h4 { font-size: 13px; font-weight: 600; color: var(--text-bright); margin: 0 0 14px 0; }
+        .detail-section h4 { font-size: 13px; font-weight: 700; color: var(--text-bright); margin: 0 0 12px 0; }
 
-        /* Flank matching card */
-        .flank-match-card { display: flex; gap: 16px; background: rgba(255,255,255,0.02); padding: 14px; border-radius: 8px; align-items: center; }
-        .flank-box { background: #000; padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); width: 180px; text-align: center; }
-        .f-title { font-size: 10px; color: var(--text-dim); display: block; margin-bottom: 8px; }
-        .stripe-pattern-sim { height: 40px; display: flex; justify-content: space-around; align-items: center; }
-        .stripe { background: #f97316; width: 6px; height: 100%; border-radius: 3px; }
-        .stripe.s1 { transform: rotate(15deg); }
-        .stripe.s2 { transform: rotate(-10deg); height: 80%; }
-        .stripe.s3 { transform: rotate(5deg); }
-        .flank-meta { font-size: 11px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
-        .flank-meta code { color: #34d399; }
-        .green-text { color: #10b981; font-weight: 600; }
-
-        .timeline-track { display: flex; gap: 16px; position: relative; overflow-x: auto; padding-bottom: 8px; }
-        .timeline-node { display: flex; flex-direction: column; align-items: flex-start; min-width: 140px; }
-        .node-dot { width: 10px; height: 10px; border-radius: 50%; margin-bottom: 8px; box-shadow: 0 0 8px currentColor; }
-        .node-content { display: flex; flex-direction: column; gap: 2px; font-size: 11px; }
-        .node-time { font-size: 10px; color: var(--text-dim); }
-        .node-cam { font-weight: 700; color: var(--text-bright); font-family: var(--font-mono); }
-        .node-zone { color: var(--text-muted); }
+        .flank-match-card { display: flex; gap: 20px; align-items: center; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 14px; }
+        .flank-box { width: 140px; height: 70px; background: #000; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); padding: 8px; display: flex; flex-direction: column; justify-content: space-between; }
+        .f-title { font-size: 9px; color: var(--text-dim); }
+        .stripe-pattern-sim { display: flex; gap: 8px; justify-content: center; height: 30px; align-items: center; }
+        .stripe { width: 6px; background: #f97316; border-radius: 2px; }
+        .stripe.s1 { height: 26px; transform: rotate(-8deg); }
+        .stripe.s2 { height: 18px; transform: rotate(4deg); }
+        .stripe.s3 { height: 24px; transform: rotate(-3deg); }
 
         .sightings-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        .sightings-table th, .sightings-table td { padding: 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .sightings-table th { font-size: 11px; color: var(--text-dim); font-weight: 600; }
-        .status-confirmed { color: #34d399; background: rgba(16,185,129,0.1); padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+        .sightings-table th, .sightings-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .sightings-table th { font-size: 10px; color: var(--text-dim); }
+        .status-confirmed { color: #34d399; font-size: 10px; font-weight: 700; }
+        .zone-tag { font-size: 10px; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 3px; }
 
-        /* Human Review Queue */
-        .human-review-container, .enroll-container { display: flex; flex-direction: column; gap: 16px; }
-        .sub-text { font-size: 12px; color: var(--text-dim); margin-top: -12px; margin-bottom: 16px; }
+        .enroll-container, .human-review-container { max-width: 800px; }
+        .enroll-card, .upload-section-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 24px; }
+        .enroll-card h3, .upload-section-card h3 { font-size: 16px; font-weight: 700; color: var(--text-bright); margin: 0 0 4px 0; }
+        .sub-text { font-size: 12px; color: var(--text-dim); margin-bottom: 20px; }
 
-        .review-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 18px; display: flex; gap: 18px; }
-        .review-img-box { width: 160px; height: 140px; background: #000; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid var(--border-subtle); }
-        .img-icon { font-size: 40px; margin-bottom: 6px; }
-        .file-name { font-size: 10px; color: var(--text-muted); }
-        .cam-tag { font-size: 9px; color: #34d399; background: rgba(16,185,129,0.1); padding: 2px 6px; border-radius: 3px; margin-top: 4px; }
-
-        .review-candidates-box { flex: 1; display: flex; flex-direction: column; gap: 12px; }
-        .review-header { font-size: 11px; color: var(--text-dim); }
-        .candidates-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .cand-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
-        .cand-rank { font-size: 10px; color: var(--text-dim); }
-        .cand-name { font-size: 14px; font-weight: 700; color: var(--text-bright); }
-        .cand-conf { font-size: 11px; color: #10b981; font-weight: 600; margin-bottom: 6px; }
-        .confirm-cand-btn { padding: 6px; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #34d399; border-radius: 4px; font-weight: 600; cursor: pointer; }
-
-        .review-alt-actions { display: flex; justify-content: flex-end; }
-        .alt-act-btn { padding: 6px 14px; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #fbbf24; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; }
-
-        /* Enrollment Form */
-        .enroll-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 24px; max-width: 600px; }
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
         .form-group { display: flex; flex-direction: column; gap: 6px; }
         .form-group label { font-size: 11px; color: var(--text-dim); }
-        .form-input { padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--text-main); font-size: 12px; }
-        .submit-enroll-btn { width: 100%; padding: 12px; background: linear-gradient(135deg, #10b981, #059669); border: none; border-radius: 8px; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; }
+        .form-group input, .form-group select { padding: 10px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--text-main); font-size: 12px; }
 
-        .empty-state { padding: 40px; text-align: center; color: var(--text-dim); font-size: 13px; background: var(--bg-card); border-radius: 12px; }
+        .submit-enroll-btn { width: 100%; padding: 12px; background: linear-gradient(135deg, #10b981, #059669); border: none; border-radius: 8px; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; }
+        .empty-state { text-align: center; color: var(--text-dim); padding: 30px; font-size: 12px; }
       `}</style>
     </div>
   );

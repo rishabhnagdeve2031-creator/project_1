@@ -2,7 +2,7 @@ import React from 'react';
 import { useAppContext } from '../context/AppContext';
 import logoImg from '../assets/logo.png';
 
-export default function Navbar({ isMenuOpen, onToggleMenu }) {
+export default function Navbar({ isMenuOpen, onToggleMenu, onNavigate }) {
   const { toggleAppMode, isRealMode, backendStatus } = useAppContext();
 
   return (
@@ -20,7 +20,12 @@ export default function Navbar({ isMenuOpen, onToggleMenu }) {
           <span className="hamburger-bar"></span>
         </button>
 
-        <div className="navbar-brand">
+        <div 
+          className="navbar-brand"
+          onClick={() => onNavigate && onNavigate('home')}
+          style={{ cursor: onNavigate ? 'pointer' : 'default' }}
+          title="Go to Home Experience"
+        >
           <div className="brand-icon-wrapper" style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}>
             <img src={logoImg} alt="TigerMarg Logo" className="brand-logo-img" />
           </div>

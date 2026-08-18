@@ -2,8 +2,8 @@ import os
 import cv2
 import numpy as np
 
-train_img_dir = r"C:\Users\VICTUS\OneDrive\Desktop\tiger train dataset\tigers2\train\images"
-train_lbl_dir = r"C:\Users\VICTUS\OneDrive\Desktop\tiger train dataset\tigers2\train\labels"
+train_img_dir = os.environ.get("PENCH_TRAIN_IMG_DIR", os.path.join("data", "dataset", "images"))
+train_lbl_dir = os.environ.get("PENCH_TRAIN_LBL_DIR", os.path.join("data", "dataset", "labels"))
 
 # Get initial list of positive tiger images (ignoring neg_ images)
 orig_images = [f for f in os.listdir(train_img_dir) if f.endswith(('.jpg', '.jpeg', '.png')) and not f.startswith('neg_') and not f.startswith('aug_')]

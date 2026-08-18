@@ -1,8 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useGSAP } from '@gsap/react';
-import Lenis from 'lenis';
 import { Compass, ArrowDown, ArrowRight, Activity } from 'lucide-react';
 
 // Import assets
@@ -14,116 +11,65 @@ import familyImg from '../../assets/family.png';
 // Import subcomponents
 import WildlifeMap from '../map/WildlifeMap';
 
-const ForestJourney = ({ scrollerEl, onProgressChange, onNavigate }) => {
+const ForestJourney = ({ scrollProgress = 0, onProgressChange, onNavigate, onScrollDown }) => {
   const containerRef = useRef(null);
   const triggerRef = useRef(null);
+  const tlRef = useRef(null);
   const [currentProgress, setCurrentProgress] = useState(0);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const isLoaded = true;
 
-  // Set up Lenis smooth scrolling and reverse scroll on mount
+  // GSAP animation triggers via standard React useEffect
   useEffect(() => {
-    if (!scrollerEl) return;
-
-    // Disable automatic browser scroll restoration
-    if ('scrollRestoration' in window.history) {
-      window.history.scrollRestoration = 'manual';
-    }
-
-    const spacerEl = triggerRef.current; // fallback to the trigger ref element
-
-    const lenis = new Lenis({
-      wrapper: scrollerEl,
-      content: spacerEl || undefined,
-      duration: 1.4,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      direction: 'vertical',
-      gestureDirection: 'vertical',
-      smooth: true,
-      mouseMultiplier: 1.0,
-      smoothTouch: false,
-    });
-
-    // Synchronize ScrollTrigger with Lenis scroll updates
-    lenis.on('scroll', () => {
-      ScrollTrigger.update();
-    });
-
-    function raf(time) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-    requestAnimationFrame(raf);
-
-    // Initial position: Scroll to top, then fade in
-    const timer = setTimeout(() => {
-      if (scrollerEl) {
-        scrollerEl.scrollTo(0, 0);
-      } else {
-        window.scrollTo(0, 0);
-      }
-      requestAnimationFrame(() => {
-        setIsLoaded(true);
-      });
-    }, 100);
-
-    return () => {
-      lenis.destroy();
-      clearTimeout(timer);
-    };
-  }, [scrollerEl]);
-
-  // GSAP animation triggers
-  useGSAP(() => {
-    gsap.registerPlugin(ScrollTrigger);
-
     // Timeline with smooth callbacks for updating React state dynamically
     const tl = gsap.timeline({ 
       paused: true,
       onUpdate: () => {
         const currentP = tl.progress();
         setCurrentProgress(currentP);
-        onProgressChange(currentP);
+        if (onProgressChange) onProgressChange(currentP);
       }
     });
+
+    tlRef.current = tl;
 
     // Initialize Scene settings
     gsap.set('.scene', { opacity: 0, visibility: 'hidden' });
     gsap.set('.scene-1', { opacity: 1, visibility: 'visible' });
 
-    // Define timeline steps (0 to 1 duration matches scroll progress)
+    // Define timeline steps (0 to 1 duration matches scroll progress) — Optimized with pure GPU transforms
     tl
       // --- SCENE 1 to 2 TRANSITION (0.0 to 0.18) ---
-      .to('.scene-1-bg', { scale: 2.2, filter: 'blur(15px)', duration: 0.15, ease: 'power1.inOut' }, 0)
-      .to('.scene-1-content', { y: -150, opacity: 0, duration: 0.12, ease: 'power1.inOut' }, 0)
+      .to('.scene-1-bg', { scale: 1.25, opacity: 0.2, duration: 0.15, ease: 'power1.inOut' }, 0)
+      .to('.scene-1-content', { y: -100, opacity: 0, duration: 0.12, ease: 'power1.inOut' }, 0)
       .to('.scene-1-guide', { opacity: 0, duration: 0.08 }, 0)
       .to('.scene-1', { opacity: 0, visibility: 'hidden', duration: 0.03 }, 0.15)
       
       .to('.scene-2', { opacity: 1, visibility: 'visible', duration: 0.05 }, 0.12)
-      .fromTo('.scene-2-bg', { scale: 0.7, filter: 'blur(10px)' }, { scale: 1.05, filter: 'blur(0px)', duration: 0.15, ease: 'power1.out' }, 0.12)
-      .fromTo('.scene-2-foliage-left', { scale: 0.6, x: -100, y: 100 }, { scale: 2.2, x: -350, y: -200, opacity: 0, duration: 0.18, ease: 'power1.in' }, 0.12)
-      .fromTo('.scene-2-foliage-right', { scale: 0.6, x: 100, y: 100 }, { scale: 2.2, x: 350, y: -200, opacity: 0, duration: 0.18, ease: 'power1.in' }, 0.12)
-      .fromTo('.scene-2-text-1', { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.06 }, 0.14)
-      .to('.scene-2-text-1', { opacity: 0, y: -50, duration: 0.06 }, 0.22)
-      .fromTo('.scene-2-text-2', { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.06 }, 0.22)
-      .to('.scene-2-text-2', { opacity: 0, y: -50, duration: 0.06 }, 0.30)
+      .fromTo('.scene-2-bg', { scale: 1.15, opacity: 0.4 }, { scale: 1.0, opacity: 1, duration: 0.15, ease: 'power1.out' }, 0.12)
+      .fromTo('.scene-2-foliage-left', { scale: 0.8, x: -80, y: 60 }, { scale: 1.6, x: -200, y: -100, opacity: 0, duration: 0.18, ease: 'power1.in' }, 0.12)
+      .fromTo('.scene-2-foliage-right', { scale: 0.8, x: 80, y: 60 }, { scale: 1.6, x: 200, y: -100, opacity: 0, duration: 0.18, ease: 'power1.in' }, 0.12)
+      .fromTo('.scene-2-text-1', { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.06 }, 0.14)
+      .to('.scene-2-text-1', { opacity: 0, y: -40, duration: 0.06 }, 0.22)
+      .fromTo('.scene-2-text-2', { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.06 }, 0.22)
+      .to('.scene-2-text-2', { opacity: 0, y: -40, duration: 0.06 }, 0.30)
       .to('.scene-2', { opacity: 0, visibility: 'hidden', duration: 0.05 }, 0.32)
 
       // --- SCENE 3: DEEPER INTO PENCH (0.32 to 0.46) ---
       .to('.scene-3', { opacity: 1, visibility: 'visible', duration: 0.05 }, 0.30)
-      .fromTo('.scene-3-bg', { scale: 0.8, filter: 'blur(8px)' }, { scale: 1.05, filter: 'blur(0px)', duration: 0.14, ease: 'power1.out' }, 0.30)
+      .fromTo('.scene-3-bg', { scale: 1.1, opacity: 0.5 }, { scale: 1.0, opacity: 1, duration: 0.14, ease: 'power1.out' }, 0.30)
       .fromTo('.scene-3-vignette', { opacity: 0 }, { opacity: 0.88, duration: 0.14 }, 0.30)
-      .fromTo('.scene-3-text', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.08, ease: 'back.out(1.2)' }, 0.34)
+      .fromTo('.scene-3-text', { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.08, ease: 'power1.out' }, 0.34)
       .to('.scene-3-text', { opacity: 0, y: -30, duration: 0.06 }, 0.42)
       .to('.scene-3', { opacity: 0, visibility: 'hidden', duration: 0.04 }, 0.46)
 
       // --- SCENE 4: SIGNS OF THE TIGER (0.46 to 0.58) ---
       .to('.scene-4', { opacity: 1, visibility: 'visible', duration: 0.05 }, 0.44)
-      .fromTo('.scene-4-bg', { scale: 0.85, filter: 'blur(8px)' }, { scale: 1.05, filter: 'blur(0px)', duration: 0.12, ease: 'power1.out' }, 0.44)
-      .fromTo('.scene-4-scratches', { opacity: 0, scale: 1.2 }, { opacity: 0.7, scale: 1.0, duration: 0.08 }, 0.46)
-      .fromTo('.print-1', { opacity: 0, scale: 0.6 }, { opacity: 0.65, scale: 1, duration: 0.04 }, 0.47)
-      .fromTo('.print-2', { opacity: 0, scale: 0.6 }, { opacity: 0.65, scale: 1, duration: 0.04 }, 0.49)
-      .fromTo('.print-3', { opacity: 0, scale: 0.6 }, { opacity: 0.65, scale: 1, duration: 0.04 }, 0.51)
-      .fromTo('.scene-4-shadow', { opacity: 0, x: -80 }, { opacity: 0.25, x: 20, duration: 0.10, ease: 'power1.inOut' }, 0.48)
+      .fromTo('.scene-4-bg', { scale: 1.1, opacity: 0.6 }, { scale: 1.0, opacity: 1, duration: 0.12, ease: 'power1.out' }, 0.44)
+      .fromTo('.scene-4-scratches', { opacity: 0, scale: 1.1 }, { opacity: 0.7, scale: 1.0, duration: 0.08 }, 0.46)
+      .fromTo('.print-1', { opacity: 0, scale: 0.8 }, { opacity: 0.65, scale: 1, duration: 0.04 }, 0.47)
+      .fromTo('.print-2', { opacity: 0, scale: 0.8 }, { opacity: 0.65, scale: 1, duration: 0.04 }, 0.49)
+      .fromTo('.print-3', { opacity: 0, scale: 0.8 }, { opacity: 0.65, scale: 1, duration: 0.04 }, 0.51)
+      .fromTo('.scene-4-shadow', { opacity: 0, x: -60 }, { opacity: 0.25, x: 20, duration: 0.10, ease: 'power1.inOut' }, 0.48)
       .fromTo('.scene-4-text-1', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.06 }, 0.47)
       .to('.scene-4-text-1', { opacity: 0, y: -30, duration: 0.05 }, 0.52)
       .fromTo('.scene-4-text-2', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.06 }, 0.52)
@@ -132,62 +78,52 @@ const ForestJourney = ({ scrollerEl, onProgressChange, onNavigate }) => {
 
       // --- SCENE 5: THE TIGER REVEAL (0.58 to 0.74) ---
       .to('.scene-5', { opacity: 1, visibility: 'visible', duration: 0.04 }, 0.56)
-      .fromTo('.scene-5-bg', { scale: 1.3, filter: 'blur(12px)' }, { scale: 1.02, filter: 'blur(0px)', duration: 0.14, ease: 'power2.out' }, 0.56)
+      .fromTo('.scene-5-bg', { scale: 1.15, opacity: 0.5 }, { scale: 1.0, opacity: 1, duration: 0.14, ease: 'power1.out' }, 0.56)
       .fromTo('.scene-5-vignette', { opacity: 0.8 }, { opacity: 0.4, duration: 0.1 }, 0.58)
-      .fromTo('.scene-5-foliage', { scale: 1.0, filter: 'blur(0px)' }, { scale: 2.2, filter: 'blur(10px)', opacity: 0, duration: 0.12 }, 0.57)
+      .fromTo('.scene-5-foliage', { scale: 1.0 }, { scale: 1.5, opacity: 0, duration: 0.12 }, 0.57)
       .fromTo('.scene-5-eyes-glow', { opacity: 0 }, { opacity: 0.95, duration: 0.06 }, 0.61)
       .to('.scene-5-eyes-glow', { opacity: 0, duration: 0.04 }, 0.68)
       .fromTo('.scene-5-hud', { opacity: 0 }, { opacity: 1, duration: 0.08 }, 0.63)
-      .fromTo('.scene-5-text', { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.08 }, 0.64)
-      .to('.scene-5', { opacity: 0, scale: 1.12, filter: 'blur(10px)', visibility: 'hidden', duration: 0.05 }, 0.74)
+      .fromTo('.scene-5-text', { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.08 }, 0.64)
+      .to('.scene-5', { opacity: 0, scale: 1.05, visibility: 'hidden', duration: 0.05 }, 0.74)
 
       // --- SCENE 6: TIGER FAMILY (0.74 to 0.84) ---
       .to('.scene-6', { opacity: 1, visibility: 'visible', duration: 0.04 }, 0.73)
-      .fromTo('.scene-6-bg', { scale: 0.9, filter: 'blur(8px)' }, { scale: 1.02, filter: 'blur(0px)', duration: 0.10, ease: 'power1.out' }, 0.73)
-      .fromTo('.marker-group', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.06, stagger: 0.02 }, 0.76)
-      .to('.scene-6', { opacity: 0, scale: 1.1, filter: 'blur(8px)', visibility: 'hidden', duration: 0.04 }, 0.84)
+      .fromTo('.scene-6-bg', { scale: 1.1, opacity: 0.5 }, { scale: 1.0, opacity: 1, duration: 0.10, ease: 'power1.out' }, 0.73)
+      .fromTo('.marker-group', { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.06, stagger: 0.02 }, 0.76)
+      .to('.scene-6', { opacity: 0, scale: 1.05, visibility: 'hidden', duration: 0.04 }, 0.84)
 
       // --- SCENE 7: ECOSYSTEM CARDS (0.84 to 0.92) ---
       .to('.scene-7', { opacity: 1, visibility: 'visible', duration: 0.04 }, 0.83)
-      .fromTo('.scene-7-bg', { scale: 0.9, filter: 'blur(8px)' }, { scale: 1.05, filter: 'blur(2px)', duration: 0.08 }, 0.83)
-      .fromTo('.eco-card', { opacity: 0, y: 100 }, { opacity: 1, y: 0, duration: 0.08, stagger: 0.02, ease: 'power2.out' }, 0.84)
+      .fromTo('.scene-7-bg', { scale: 1.08, opacity: 0.6 }, { scale: 1.0, opacity: 1, duration: 0.08 }, 0.83)
+      .fromTo('.eco-card', { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.08, stagger: 0.02, ease: 'power1.out' }, 0.84)
       .to('.scene-7', { opacity: 0, visibility: 'hidden', duration: 0.04 }, 0.92)
 
       // --- SCENE 8: TELEMETRY MAP (0.92 to 0.97) ---
       .to('.scene-8', { opacity: 1, visibility: 'visible', duration: 0.03 }, 0.91)
-      .fromTo('.scene-8-content', { opacity: 0, scale: 0.92 }, { opacity: 1, scale: 1, duration: 0.05, ease: 'power2.out' }, 0.91)
+      .fromTo('.scene-8-content', { opacity: 0, scale: 0.96 }, { opacity: 1, scale: 1, duration: 0.05, ease: 'power1.out' }, 0.91)
       .to('.scene-8', { opacity: 0, visibility: 'hidden', duration: 0.03 }, 0.97)
 
       // --- SCENE 9: FINAL CLEARING (0.97 to 1.0) ---
       .to('.scene-9', { opacity: 1, visibility: 'visible', duration: 0.03 }, 0.96)
-      .fromTo('.scene-9-content', { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.04, ease: 'power2.out' }, 0.965);
-
-    // ScrollTrigger creation
-    if (!scrollerEl) return;
-    const st = ScrollTrigger.create({
-      trigger: triggerRef.current,
-      scroller: scrollerEl,
-      start: 'top top',
-      end: 'bottom bottom',
-      scrub: true,
-      onUpdate: (self) => {
-        // Map scroll top -> bottom to timeline progression
-        const p = self.progress;
-        // Smoothly animate timeline progress to target scroll position
-        gsap.to(tl, {
-          progress: p,
-          duration: 0.4,
-          ease: 'sine.out',
-          overwrite: 'auto'
-        });
-      },
-    });
+      .fromTo('.scene-9-content', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.04, ease: 'power1.out' }, 0.965);
 
     return () => {
-      st.kill();
       tl.kill();
     };
-  }, [onProgressChange, scrollerEl]);
+  }, []);
+
+  // Update timeline with requestAnimationFrame for 60-120fps smooth seeking
+  useEffect(() => {
+    let animId;
+    if (tlRef.current) {
+      animId = requestAnimationFrame(() => {
+        tlRef.current.progress(scrollProgress);
+        setCurrentProgress(scrollProgress);
+      });
+    }
+    return () => cancelAnimationFrame(animId);
+  }, [scrollProgress]);
 
   // Ecosystem dynamic card contents
   const ecoData = [
@@ -217,7 +153,10 @@ const ForestJourney = ({ scrollerEl, onProgressChange, onNavigate }) => {
         {/* ========================================================
             SCENE 1: THE FOREST FROM ABOVE (0.00 - 0.15)
             ======================================================== */}
-        <div className="scene scene-1 absolute inset-0 w-full h-full flex flex-col justify-between p-8 md:p-16">
+        <div 
+          className="scene scene-1 absolute inset-0 w-full h-full flex flex-col justify-between p-8 md:p-16"
+          style={{ pointerEvents: currentProgress <= 0.15 ? 'auto' : 'none' }}
+        >
           <div
             className="scene-1-bg absolute inset-0 w-full h-full bg-cover bg-center"
             style={{ backgroundImage: `url(${canopyImg})` }}
@@ -237,15 +176,35 @@ const ForestJourney = ({ scrollerEl, onProgressChange, onNavigate }) => {
             <p className="text-xs md:text-sm tracking-[0.25em] text-stone-300 font-medium italic mt-4 max-w-md drop-shadow">
               “Follow the trail. Enter the wild.”
             </p>
+            <div className="flex flex-wrap justify-center gap-4 mt-6 pointer-events-auto">
+              <button
+                onClick={() => onNavigate('dashboard')}
+                className="hero-btn-primary"
+              >
+                ▶ Launch System
+              </button>
+              <button
+                onClick={() => onNavigate('movement-map')}
+                className="hero-btn-secondary"
+              >
+                🗺 Wildlife Map
+              </button>
+            </div>
           </div>
 
-          <div className="scene-1-guide relative z-10 flex flex-col items-center gap-2 animate-bounce">
-            <span className="font-mono text-[10px] text-stone-400 tracking-[0.3em] uppercase">
-              Scroll Down to Enter
+
+          <button
+            onClick={onScrollDown}
+            className="scene-1-guide relative z-10 flex flex-col items-center gap-2 animate-bounce pointer-events-auto cursor-pointer group"
+            title="Click or scroll down to explore trail"
+          >
+            <span className="font-mono text-[10px] text-stone-400 group-hover:text-amber-400 tracking-[0.3em] uppercase transition-colors">
+              Scroll Down to Explore Trail
             </span>
-            <ArrowDown className="w-4 h-4 text-amber-500" />
-          </div>
+            <ArrowDown className="w-4 h-4 text-amber-500 group-hover:translate-y-1 transition-transform" />
+          </button>
         </div>
+
 
         {/* ========================================================
             SCENE 2: FOREST TRAIL (0.12 - 0.32)

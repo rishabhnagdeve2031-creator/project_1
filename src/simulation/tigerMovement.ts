@@ -23,7 +23,7 @@ const BOUNDS = {
 /**
  * Species-specific speed ranges (min, max) in km/h
  */
-const SPEED_RANGES: Record<string, { min: number; max: number }> = {
+const _SPEED_RANGES: Record<string, { min: number; max: number }> = {
   tiger:      { min: 1.5, max: 8.0 },
   elephant:   { min: 0.8, max: 4.5 },
   leopard:    { min: 2.0, max: 9.5 },

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { YoloDetectionService } from '../services/YoloDetectionService';
+import { BackendService } from '../services/api/Services';
 
 export default function AITriage() {
   const { addObservation, enrollNewTiger, isRealMode, backendStatus } = useAppContext();
@@ -9,110 +10,7 @@ export default function AITriage() {
   const [selectedCamera, setSelectedCamera] = useState('CT-014');
   const [isProcessing, setIsProcessing] = useState(false);
   const [detectionResult, setDetectionResult] = useState(null);
-
-  const loadPresetSample = async (presetType) => {
-    setIsProcessing(true);
-    setDetectionResult(null);
-
-    const canvas = document.createElement('canvas');
-    canvas.width = 640;
-    canvas.height = 480;
-    const ctx = canvas.getContext('2d');
-
-    if (presetType === 'tiger') {
-      setSelectedCamera('CT-014');
-      const grad = ctx.createLinearGradient(0, 0, 640, 480);
-      grad.addColorStop(0, '#1c2d1c');
-      grad.addColorStop(1, '#0b160b');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, 640, 480);
-
-      ctx.fillStyle = '#ea580c';
-      ctx.beginPath(); ctx.ellipse(320, 240, 150, 95, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#0f172a';
-      for (let x = 210; x <= 420; x += 22) {
-        ctx.beginPath(); ctx.moveTo(x, 150); ctx.lineTo(x + 6, 230); ctx.lineTo(x - 6, 325); ctx.fill();
-      }
-    } else if (presetType === 'zebra') {
-      setSelectedCamera('CT-008');
-      ctx.fillStyle = '#1e293b';
-      ctx.fillRect(0, 0, 640, 480);
-
-      ctx.fillStyle = '#f8fafc';
-      ctx.beginPath(); ctx.ellipse(320, 240, 140, 90, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#020617';
-      for (let x = 200; x <= 430; x += 18) {
-        ctx.fillRect(x, 150, 9, 180);
-      }
-    } else {
-      setSelectedCamera('CT-022');
-      ctx.fillStyle = '#020617';
-      ctx.fillRect(0, 0, 640, 480);
-
-      ctx.fillStyle = '#334155';
-      ctx.beginPath(); ctx.ellipse(310, 240, 140, 85, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#0f172a';
-      for (let x = 200; x <= 400; x += 25) {
-        ctx.fillRect(x, 160, 10, 150);
-      }
-    }
-
-    canvas.toBlob(async (blob) => {
-      const fileName = `sample_${presetType}.jpg`;
-      const file = new File([blob], fileName, { type: 'image/jpeg' });
-      setSelectedFile(file);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-
-      if (backendStatus.connected) {
-        const res = await YoloDetectionService.detectImage(file);
-        setIsProcessing(false);
-        if (res.connected && res.success) {
-          const detections = res.detections || [];
-          const hasTiger = detections.length > 0;
-          const mainDetection = detections[0] || null;
-          setDetectionResult({
-            connected: true,
-            detected: hasTiger,
-            totalDetectionsCount: detections.length,
-            species: mainDetection ? (mainDetection.class || mainDetection.label) : 'None',
-            confidencePct: mainDetection ? (mainDetection.confidence_pct || Math.round((mainDetection.confidence || 0) * 100)) : 0,
-            bbox: mainDetection ? mainDetection.bbox : null,
-            allDetections: detections,
-            model: res.model || 'best.pt',
-            device: res.device || 'CPU',
-            inferenceTimeMs: res.inferenceTimeMs || 45,
-            width: 640,
-            height: 480,
-            tigerId: hasTiger ? 'TGR-001' : null,
-            cameraId: presetType === 'tiger' ? 'CT-014' : presetType === 'zebra' ? 'CT-008' : 'CT-022',
-            timestamp: new Date().toLocaleString(),
-            fileName: fileName
-          });
-        }
-      } else {
-        setIsProcessing(false);
-        const isTiger = presetType !== 'zebra';
-        setDetectionResult({
-          connected: true,
-          detected: isTiger,
-          totalDetectionsCount: isTiger ? 1 : 0,
-          species: isTiger ? 'tiger' : 'zebra',
-          confidencePct: isTiger ? 94 : 0,
-          bbox: isTiger ? [170, 145, 470, 335] : null,
-          model: 'best.pt (Sample Preset)',
-          device: 'CPU',
-          inferenceTimeMs: 38,
-          width: 640,
-          height: 480,
-          tigerId: isTiger ? 'TGR-001' : null,
-          cameraId: presetType === 'tiger' ? 'CT-014' : presetType === 'zebra' ? 'CT-008' : 'CT-022',
-          timestamp: new Date().toLocaleString(),
-          fileName: fileName
-        });
-      }
-    }, 'image/jpeg', 0.9);
-  };
+  const [rejected, setRejected] = useState(false);
 
   const handleImageChange = async (e) => {
     const file = e.target.files?.[0];
@@ -120,6 +18,7 @@ export default function AITriage() {
       setSelectedFile(file);
       setPreviewUrl(URL.createObjectURL(file));
       setDetectionResult(null);
+      setRejected(false);
 
       // Extract real image metadata
       const meta = YoloDetectionService.parseImageMetadata(file);
@@ -137,11 +36,9 @@ export default function AITriage() {
 
     setIsProcessing(true);
     setDetectionResult(null);
+    setRejected(false);
 
     const meta = YoloDetectionService.parseImageMetadata(selectedFile);
-
-    // Simulate processing delay for realism
-    await new Promise(r => setTimeout(r, 800 + Math.random() * 600));
 
     const res = await YoloDetectionService.detectImage(selectedFile);
 
@@ -150,106 +47,108 @@ export default function AITriage() {
     if (res.connected && res.success) {
       // ── Real backend response ──
       const detections = res.detections || [];
-      const hasTiger = detections.length > 0;
+      const hasTiger = detections.some(d => (d.class || d.label || '').toLowerCase().includes('tiger'));
       const mainDetection = detections[0] || null;
 
       setDetectionResult({
         connected: true,
+        source: 'REAL_YOLO',
         detected: hasTiger,
         totalDetectionsCount: detections.length,
         species: mainDetection ? (mainDetection.class || mainDetection.label) : 'None',
         confidencePct: mainDetection ? (mainDetection.confidence_pct || Math.round((mainDetection.confidence || 0) * 100)) : 0,
-        confidenceRaw: mainDetection ? (mainDetection.confidence || 0) : 0,
         bbox: mainDetection ? mainDetection.bbox : null,
         allDetections: detections,
+        crops: res.crops || [],
         model: res.model || 'best.pt',
         modelPath: res.modelPath,
         device: res.device || 'CPU',
         inferenceTimeMs: res.inferenceTimeMs || res.processingTimeMs || 0,
-        width: res.width,
-        height: res.height,
-        tigerId: null,
-        tigerName: 'Unidentified Individual',
+        width: res.width || 640,
+        height: res.height || 480,
+        tigerId: 'UNIDENTIFIED',
+        tigerName: 'Unidentified Individual (Pending Stripe Re-ID)',
         cameraId: selectedCamera || meta.cameraId,
         timestamp: meta.timestamp,
         fileName: meta.fileName,
         fileSizeMb: meta.fileSizeMb,
-        lat: 21.73,
-        lng: 79.31,
+        lat: 21.7380,
+        lng: 79.3150,
         zone: 'Core Zone'
       });
     } else {
-      // ── Offline / Demo Mode: simulate detection client-side ──
-      const fakeConfidence = Math.floor(Math.random() * 18) + 78; // 78–95%
-      const fakeLatency = Math.floor(Math.random() * 60) + 30;    // 30–90 ms
-      const fakeDetected = true; // Assume tiger present in uploaded image
-      const fakeBbox = [170, 145, 470, 335];
-
-      setDetectionResult({
-        connected: true,  // treat as connected so result panel shows
-        demoMode: true,   // flag to show demo banner
-        detected: fakeDetected,
-        totalDetectionsCount: 1,
-        species: 'tiger',
-        confidencePct: fakeConfidence,
-        bbox: fakeBbox,
-        allDetections: [{ class: 'tiger', confidence: fakeConfidence / 100, bbox: fakeBbox }],
-        model: 'best.pt (Demo Mode)',
-        device: 'CPU',
-        inferenceTimeMs: fakeLatency,
-        width: 640,
-        height: 480,
-        tigerId: null,
-        tigerName: 'Unidentified Individual',
-        cameraId: selectedCamera || meta.cameraId,
-        timestamp: meta.timestamp,
-        fileName: meta.fileName,
-        fileSizeMb: meta.fileSizeMb,
-        lat: 21.73,
-        lng: 79.31,
-        zone: 'Core Zone'
-      });
+      // ── Offline Error (Honest reporting in Real Mode) ──
+      if (isRealMode) {
+        setDetectionResult({
+          connected: false,
+          source: 'REAL_YOLO',
+          message: res.message || 'AI BACKEND OFFLINE — Cannot run real YOLO inference. Start server.py.'
+        });
+      } else {
+        // Demo Mode Simulation
+        setDetectionResult({
+          connected: true,
+          demoMode: true,
+          source: 'DEMO_SIMULATION',
+          detected: true,
+          totalDetectionsCount: 1,
+          species: 'tiger',
+          confidencePct: 92,
+          bbox: { x1: 170, y1: 145, x2: 470, y2: 335 },
+          allDetections: [{ class: 'tiger', confidence: 0.92, confidence_pct: 92, bbox: { x1: 170, y1: 145, x2: 470, y2: 335 } }],
+          model: 'best.pt (Simulated Demo)',
+          device: 'CPU',
+          inferenceTimeMs: 42,
+          width: 640,
+          height: 480,
+          tigerId: 'TGR-001',
+          cameraId: selectedCamera || 'CT-014',
+          timestamp: new Date().toLocaleString(),
+          fileName: meta.fileName
+        });
+      }
     }
   };
 
-  const handleCommitRealObservation = (enrolledTiger = null) => {
+  const handleCommitRealObservation = async (enrolledTigerId = null) => {
     if (!detectionResult || !detectionResult.detected) return;
 
-    const tigerId = enrolledTiger ? enrolledTiger.id : 'UNIDENTIFIED';
+    const assignedId = enrolledTigerId || 'UNIDENTIFIED';
 
-    addObservation({
-      tigerId: tigerId,
-      cameraId: detectionResult.cameraId,
+    await addObservation({
+      tiger_id: assignedId,
+      camera_id: detectionResult.cameraId,
       timestamp: detectionResult.timestamp,
       zone: detectionResult.zone,
       confidence: detectionResult.confidencePct,
       lat: detectionResult.lat,
       lng: detectionResult.lng,
       fileName: detectionResult.fileName,
-      model: detectionResult.model,
-      modelPath: detectionResult.modelPath,
-      inferenceTimeMs: detectionResult.inferenceTimeMs
+      crop_path: detectionResult.crops?.[0] || null
     });
 
-    alert(`✅ Real Observation committed successfully! Tiger Individual Status: ${tigerId}`);
+    alert(`✅ Real Observation saved! Tiger Status: ${assignedId}`);
   };
 
-  const handleEnrollAndCommit = () => {
-    const newTiger = enrollNewTiger({
+  const handleEnrollAndCommit = async () => {
+    const newTiger = await enrollNewTiger({
       name: `Real Individual (${detectionResult.fileName})`,
       cameraId: detectionResult.cameraId,
-      zone: detectionResult.zone
+      zone: detectionResult.zone,
+      lat: detectionResult.lat,
+      lng: detectionResult.lng
     });
-    handleCommitRealObservation(newTiger);
+    const tId = newTiger?.tiger_id || newTiger?.id || 'TGR-001';
+    await handleCommitRealObservation(tId);
   };
 
   return (
     <div className="pg-page">
       <div className="page-header">
         <div>
-          <h2 className="page-title">Camera Trap Image Triage</h2>
+          <h2 className="page-title">AI Camera Trap Triage</h2>
           <p className="page-subtitle">
-            Upload camera trap footage to identify wildlife species using local AI inference.
+            Upload raw camera trap footage for real-time YOLOv8 tiger detection and evidence cropping.
           </p>
         </div>
       </div>
@@ -269,8 +168,6 @@ export default function AITriage() {
               className="select-input"
             />
           </div>
-
-
 
           <div className="upload-dropzone">
             <input type="file" accept="image/*" id="file-upload" onChange={handleImageChange} hidden />
@@ -295,27 +192,24 @@ export default function AITriage() {
             onClick={runRealInference}
             disabled={isProcessing || !selectedFile}
           >
-            {isProcessing ? '⏳ Running Detection Model...' : 'Run Species Detection'}
+            {isProcessing ? '⏳ Running YOLOv8 Detection...' : 'Run Species Detection'}
           </button>
 
           <div className="api-note-box">
             <span className="api-title">Local AI Model Status</span>
             {backendStatus.connected ? (
               <div className="model-info-summary font-mono">
-                <div style={{ color: '#34d399', fontWeight: 'bold' }}>MODEL ONLINE</div>
+                <div style={{ color: '#34d399', fontWeight: 'bold' }}>AI MODEL ONLINE</div>
                 <div>Model: <span style={{ color: '#60a5fa' }}>{backendStatus.model_name || 'best.pt'}</span></div>
-                <div>Model Type: <span style={{ color: '#cbd5e1' }}>{backendStatus.model_type || 'Trained Tiger Detector'}</span></div>
-                <div>Mode: <span style={{ color: '#34d399' }}>Active</span></div>
+                <div>Class: <span style={{ color: '#a78bfa' }}>Tiger (Panthera tigris)</span></div>
                 <div>Device: <span style={{ color: '#fbbf24' }}>{backendStatus.device || 'CPU'}</span></div>
-                <div>Target Class: <span style={{ color: '#a78bfa' }}>{JSON.stringify(backendStatus.class_names || ['tiger'])}</span></div>
+                <div>DB: <span style={{ color: '#34d399' }}>SQLite Online</span></div>
               </div>
             ) : (
-              <div className="model-info-summary font-mono" style={{ color: '#fbbf24' }}>
-                <div style={{ fontWeight: 'bold', color: '#fbbf24' }}>⚡ DEMO MODE</div>
-                <div style={{ color: '#cbd5e1' }}>Model: best.pt (Simulated)</div>
-                <div style={{ color: '#94a3b8' }}>Device: CPU (Client-Side)</div>
-                <div style={{ fontSize: 10, color: '#64748b', marginTop: 4 }}>
-                  Python backend offline — running local simulation. Detection results are illustrative.
+              <div className="model-info-summary font-mono" style={{ color: '#f87171' }}>
+                <div style={{ fontWeight: 'bold' }}>⚠️ AI BACKEND OFFLINE</div>
+                <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 4 }}>
+                  Start <code>py -3.12 server.py</code> on port 8000 for local YOLO inference.
                 </div>
               </div>
             )}
@@ -324,7 +218,7 @@ export default function AITriage() {
 
         {/* Inference Output Panel */}
         <div className="triage-panel main-preview">
-          <h3>2. Detection Output</h3>
+          <h3>2. Detection Output & Bounding Boxes</h3>
 
           {!detectionResult && !isProcessing && (
             <div className="empty-preview">
@@ -343,18 +237,11 @@ export default function AITriage() {
           {detectionResult && !detectionResult.connected && (
             <div className="model-missing-box">
               <div className="missing-icon">⚠️</div>
-              <h4>CONNECTION ERROR</h4>
-              <p>Could not reach backend or run demo mode</p>
+              <h4>AI INFERENCE OFFLINE</h4>
+              <p>{detectionResult.message}</p>
               <div className="instruction-card font-mono" style={{ color: '#f87171' }}>
-                {detectionResult.message}
+                Run command: <strong>py -3.12 server.py</strong>
               </div>
-            </div>
-          )}
-
-          {detectionResult && detectionResult.connected && detectionResult.demoMode && (
-            <div style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.25)', borderRadius: 8, padding: '8px 14px', marginBottom: 12, fontSize: 11, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span>⚡</span>
-              <span><strong>Demo Mode:</strong> Python backend is offline. Results below are simulated for demonstration. Connect the YOLO backend for real inference.</span>
             </div>
           )}
 
@@ -365,52 +252,61 @@ export default function AITriage() {
                 {previewUrl ? (
                   <div style={{ position: 'relative', display: 'inline-block', maxWidth: '100%', maxHeight: '100%' }}>
                     <img src={previewUrl} alt="Camera Trap Preview" className="real-preview-img" />
-                    
-                    {/* Bounding Box Overlay rendered dynamically */}
-                    {(() => {
-                      const bw = detectionResult.bbox;
-                      if (!bw) return null;
-                      const b = Array.isArray(bw) ? { x1: bw[0], y1: bw[1], x2: bw[2], y2: bw[3] } : bw;
+
+                    {/* Bounding Box Overlay — renders ALL detections */}
+                    {!rejected && (() => {
+                      const allDets = detectionResult.allDetections || [];
                       const imgW = detectionResult.width || 640;
-                      const imgH = detectionResult.height || 640;
+                      const imgH = detectionResult.height || 480;
+                      const colors = ['#10b981', '#60a5fa', '#fbbf24', '#f472b6', '#a78bfa', '#fb923c'];
 
-                      const leftPct = ((b.x1 / imgW) * 100).toFixed(2);
-                      const topPct = ((b.y1 / imgH) * 100).toFixed(2);
-                      const widthPct = (((b.x2 - b.x1) / imgW) * 100).toFixed(2);
-                      const heightPct = (((b.y2 - b.y1) / imgH) * 100).toFixed(2);
+                      return allDets.map((det, idx) => {
+                        const bw = det.bbox;
+                        if (!bw) return null;
+                        const b = Array.isArray(bw) ? { x1: bw[0], y1: bw[1], x2: bw[2], y2: bw[3] } : bw;
+                        const color = colors[idx % colors.length];
+                        const conf = det.confidence_pct || Math.round((det.confidence || 0) * 100);
+                        const label = det.class || det.label || 'Tiger';
 
-                      return (
-                        <div
-                          className="bbox-overlay"
-                          style={{
-                            position: 'absolute',
-                            left: `${leftPct}%`,
-                            top: `${topPct}%`,
-                            width: `${widthPct}%`,
-                            height: `${heightPct}%`,
-                            border: '2px solid #10b981',
-                            background: 'rgba(16, 185, 129, 0.15)',
-                            boxShadow: '0 0 12px rgba(16, 185, 129, 0.4)',
-                            borderRadius: '3px',
-                            pointerEvents: 'none'
-                          }}
-                        >
-                          <div className="bbox-label" style={{
-                            position: 'absolute',
-                            top: '-22px',
-                            left: '-2px',
-                            background: '#10b981',
-                            color: '#000',
-                            fontWeight: '700',
-                            fontSize: '11px',
-                            padding: '2px 6px',
-                            borderRadius: '3px 3px 0 0',
-                            whiteSpace: 'nowrap'
-                          }}>
-                            🐅 Tiger: {detectionResult.confidencePct}%
+                        const leftPct = ((b.x1 / imgW) * 100).toFixed(2);
+                        const topPct = ((b.y1 / imgH) * 100).toFixed(2);
+                        const widthPct = (((b.x2 - b.x1) / imgW) * 100).toFixed(2);
+                        const heightPct = (((b.y2 - b.y1) / imgH) * 100).toFixed(2);
+
+                        return (
+                          <div
+                            key={idx}
+                            className="bbox-overlay"
+                            style={{
+                              position: 'absolute',
+                              left: `${leftPct}%`,
+                              top: `${topPct}%`,
+                              width: `${widthPct}%`,
+                              height: `${heightPct}%`,
+                              border: `2px solid ${color}`,
+                              background: `${color}22`,
+                              boxShadow: `0 0 12px ${color}66`,
+                              borderRadius: '3px',
+                              pointerEvents: 'none'
+                            }}
+                          >
+                            <div className="bbox-label" style={{
+                              position: 'absolute',
+                              top: '-22px',
+                              left: '-2px',
+                              background: color,
+                              color: '#000',
+                              fontWeight: '700',
+                              fontSize: '11px',
+                              padding: '2px 6px',
+                              borderRadius: '3px 3px 0 0',
+                              whiteSpace: 'nowrap'
+                            }}>
+                              🐅 {label} {idx + 1}: {conf}%
+                            </div>
                           </div>
-                        </div>
-                      );
+                        );
+                      });
                     })()}
                   </div>
                 ) : (
@@ -420,75 +316,85 @@ export default function AITriage() {
                 )}
               </div>
 
-              {/* Triage Output Data */}
+              {/* Triage Output Data Cards */}
               <div className="result-details-grid">
-                <div className={`res-card ${detectionResult.detected ? 'success' : 'warning'}`}>
-                  <span className="res-label">Tiger Detection Status</span>
-                  <span className={`res-val ${detectionResult.detected ? 'green' : 'red'}`}>
-                    {detectionResult.detected ? 'TIGER DETECTED' : 'NO TIGER DETECTED'}
+                <div className={`res-card ${detectionResult.detected && !rejected ? 'success' : 'warning'}`}>
+                  <span className="res-label">Species Detection (AI)</span>
+                  <span className={`res-val ${detectionResult.detected && !rejected ? 'green' : 'red'}`}>
+                    {rejected ? 'REJECTED BY OPERATOR' : detectionResult.detected ? 'TIGER DETECTED' : 'NO TIGER DETECTED'}
                   </span>
                   <span className="res-sub">
                     {detectionResult.detected 
                       ? `Confidence: ${detectionResult.confidencePct}% | Latency: ${detectionResult.inferenceTimeMs}ms`
-                      : 'Zero tigers found in image'}
+                      : 'Blank image / no animal detected'}
                   </span>
                 </div>
 
                 <div className="res-card highlight">
                   <span className="res-label">Individual Identification</span>
                   <span className="res-val orange">
-                    {detectionResult.tigerId ? detectionResult.tigerId : 'UNIDENTIFIED'}
+                    {detectionResult.tigerId}
                   </span>
                   <span className="res-sub">
-                    {detectionResult.tigerId ? 'Confirmed Profile' : 'Pending Stripe Match'}
+                    ⚠️ Stripe Re-ID required (YOLO does not identify individuals)
                   </span>
                 </div>
 
                 <div className="res-card">
-                  <span className="res-label">Model Metadata</span>
+                  <span className="res-label">Model & Device</span>
                   <span className="res-val" style={{ fontSize: 12 }}>{detectionResult.model}</span>
                   <span className="res-sub">Device: {detectionResult.device} | {detectionResult.width}x{detectionResult.height}px</span>
                 </div>
 
                 <div className="res-card">
-                  <span className="res-label">Camera & Timestamp</span>
+                  <span className="res-label">Station & Time</span>
                   <span className="res-val" style={{ fontSize: 12 }}>{detectionResult.cameraId}</span>
                   <span className="res-sub" style={{ fontSize: 10 }}>{detectionResult.timestamp}</span>
                 </div>
-              {/* Feature 2: Auto-Extracted Tiger Bounding Box Crop Snippet */}
-              {detectionResult.detected && (
-                <div className="crop-snippet-card glow-border" style={{ marginTop: 14, padding: 12, background: 'rgba(15, 23, 42, 0.6)', borderRadius: 8, border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+              </div>
+
+              {/* Evidence Crop Card */}
+              {detectionResult.detected && !rejected && (
+                <div className="crop-snippet-card" style={{ padding: 12, background: 'rgba(15, 23, 42, 0.6)', borderRadius: 8, border: '1px solid rgba(16, 185, 129, 0.3)' }}>
                   <div className="crop-snippet-header font-mono" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, fontSize: 11 }}>
-                    <span style={{ color: '#34d399', fontWeight: 'bold' }}>✂️ AUTO-EXTRACTED TIGER CROP SNIPPET</span>
+                    <span style={{ color: '#34d399', fontWeight: 'bold' }}>✂️ AUTO-EXTRACTED TIGER CROP EVIDENCE</span>
                     <span style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', padding: '2px 6px', borderRadius: 4, fontSize: 10 }}>Ready for Stripe Matcher</span>
                   </div>
                   <div className="crop-snippet-body" style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-                    <div className="crop-box" style={{ width: 140, height: 90, borderRadius: 6, overflow: 'hidden', border: '1px solid #10b981', background: '#090d12', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                      {previewUrl ? (
-                        <img src={previewUrl} alt="Tiger Crop" style={{ width: '160%', height: '160%', objectFit: 'cover', objectPosition: 'center' }} />
+                    <div className="crop-box" style={{ width: 140, height: 90, borderRadius: 6, overflow: 'hidden', border: '1px solid #10b981', background: '#090d12', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {detectionResult.crops?.[0] ? (
+                        <img src={BackendService.getMediaUrl(detectionResult.crops[0])} alt="Tiger Crop" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                      ) : previewUrl ? (
+                        <img src={previewUrl} alt="Tiger Crop" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                       ) : (
                         <span style={{ fontSize: 24 }}>🐅</span>
                       )}
                     </div>
                     <div className="crop-details font-mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                       <div>Species: <strong style={{ color: '#34d399' }}>Tiger (Panthera tigris)</strong></div>
-                      <div>Confidence: <strong style={{ color: '#60a5fa' }}>{detectionResult.confidencePct}%</strong></div>
-                      <div>Individual Status: <strong style={{ color: '#fbbf24' }}>{detectionResult.tigerId || 'Pending Re-ID'}</strong></div>
+                      <div>YOLO Confidence: <strong style={{ color: '#60a5fa' }}>{detectionResult.confidencePct}%</strong></div>
+                      <div>Individual Status: <strong style={{ color: '#fbbf24' }}>Unidentified (Human Review Queue)</strong></div>
                     </div>
                   </div>
                 </div>
               )}
-            </div>
 
-              {/* Real Detection Action Row */}
-              {detectionResult.detected ? (
+              {/* Action Buttons */}
+              {detectionResult.detected && !rejected ? (
                 <div className="action-row">
                   <button className="save-obs-btn" onClick={handleEnrollAndCommit}>
-                    Enroll New Tiger Profile (TGR-001)
+                    ➕ Enroll as New Individual (TGR-XXX)
                   </button>
                   <button className="save-obs-btn secondary" onClick={() => handleCommitRealObservation(null)}>
-                    Save Observation Record
+                    💾 Save as Unidentified Observation
                   </button>
+                  <button className="save-obs-btn danger" onClick={() => setRejected(true)}>
+                    ❌ Reject False Positive
+                  </button>
+                </div>
+              ) : rejected ? (
+                <div className="no-detection-banner font-mono" style={{ color: '#f87171' }}>
+                  Detection rejected by human operator. Observation will not be saved.
                 </div>
               ) : (
                 <div className="no-detection-banner font-mono">
@@ -505,15 +411,6 @@ export default function AITriage() {
         .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
         .page-title { font-size: 20px; font-weight: 700; color: var(--text-bright); margin: 0 0 4px 0; }
         .page-subtitle { font-size: 12px; color: var(--text-dim); margin: 0; }
-
-        .status-tags { display: flex; gap: 8px; }
-        .proto-badge { padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: 700; }
-        .proto-badge.real { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #34d399; }
-        .proto-badge.demo { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #fbbf24; }
-
-        .backend-badge { font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 4px; }
-        .backend-badge.online { background: rgba(16,185,129,0.15); color: #34d399; }
-        .backend-badge.offline { background: rgba(239,68,68,0.15); color: #f87171; }
 
         .triage-layout { display: grid; grid-template-columns: 320px 1fr; gap: 20px; }
         .triage-panel { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 20px; }
@@ -548,16 +445,11 @@ export default function AITriage() {
         .model-missing-box { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); border-radius: 10px; padding: 24px; text-align: center; color: #f87171; }
         .missing-icon { font-size: 36px; margin-bottom: 8px; }
         .model-missing-box h4 { font-size: 16px; margin: 0 0 8px 0; font-weight: 700; }
-        .instruction-card { text-align: left; background: #000; padding: 12px; border-radius: 6px; font-size: 11px; color: #cbd5e1; margin-top: 14px; display: flex; flex-direction: column; gap: 4px; }
+        .instruction-card { text-align: left; background: #000; padding: 12px; border-radius: 6px; font-size: 11px; color: #cbd5e1; margin-top: 14px; }
 
         .result-container { display: flex; flex-direction: column; gap: 16px; }
-        .image-stage { background: #000; border-radius: 8px; height: 260px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; border: 1px solid var(--border-subtle); }
+        .image-stage { background: #000; border-radius: 8px; height: 280px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; border: 1px solid var(--border-subtle); }
         .real-preview-img { max-width: 100%; max-height: 100%; object-fit: contain; }
-        .sample-tiger-canvas { width: 100%; height: 100%; background: linear-gradient(135deg, #1c271d, #0d160f); display: flex; align-items: center; justify-content: center; }
-        .tiger-visual-emoji { font-size: 100px; opacity: 0.85; }
-
-        .bbox-overlay { position: absolute; border: 2px solid #10b981; background: rgba(16, 185, 129, 0.1); box-shadow: 0 0 12px rgba(16, 185, 129, 0.3); border-radius: 4px; }
-        .bbox-label { position: absolute; top: -22px; left: -2px; background: #10b981; color: #000; font-weight: 700; font-size: 10px; padding: 2px 6px; border-radius: 3px 3px 0 0; font-family: var(--font-mono); }
 
         .result-details-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
         .res-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
@@ -569,9 +461,10 @@ export default function AITriage() {
         .model-info-summary { display: flex; flex-direction: column; gap: 3px; font-size: 11px; margin-top: 4px; }
         .no-detection-banner { background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px; padding: 12px; font-size: 11px; color: #fca5a5; }
 
-        .action-row { display: flex; gap: 12px; }
-        .save-obs-btn { flex: 1; padding: 12px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #34d399; font-weight: 600; font-size: 12px; border-radius: 8px; cursor: pointer; }
+        .action-row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .save-obs-btn { flex: 1; min-width: 160px; padding: 12px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #34d399; font-weight: 600; font-size: 12px; border-radius: 8px; cursor: pointer; }
         .save-obs-btn.secondary { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.1); color: var(--text-main); }
+        .save-obs-btn.danger { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); color: #f87171; }
 
         @media (max-width: 900px) {
           .triage-layout { grid-template-columns: 1fr; }

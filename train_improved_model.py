@@ -9,7 +9,7 @@ def main():
     print("   Base Model: YOLOv8s (Small - 11.2M params)")
     print("=" * 60)
 
-    yaml_path = r"C:\Users\VICTUS\OneDrive\Desktop\tiger train dataset\tigers2\data.yaml"
+    yaml_path = os.environ.get("PENCH_DATA_YAML", os.path.join("data", "dataset", "data.yaml"))
     
     # Initialize YOLOv8s base model
     model = YOLO("yolov8s.pt")
@@ -21,7 +21,7 @@ def main():
         imgsz=640,
         batch=16,
         name="tigers2_improved",
-        project=r"C:\Users\VICTUS\OneDrive\Desktop\tiger train dataset\runs\detect",
+        project=os.environ.get("PENCH_RUNS_DIR", "runs/detect"),
         exist_ok=True,
         pretrained=True,
         optimizer="AdamW",
@@ -41,7 +41,7 @@ def main():
     )
 
     print("\n✅ RETRAINING COMPLETE!")
-    best_weights = r"C:\Users\VICTUS\OneDrive\Desktop\tiger train dataset\runs\detect\tigers2_improved\weights\best.pt"
+    best_weights = os.path.join(os.environ.get("PENCH_RUNS_DIR", "runs/detect"), "tigers2_improved", "weights", "best.pt")
     if os.path.exists(best_weights):
         print(f"🎯 NEW TRAINED BEST WEIGHTS SAVED TO:\n   {best_weights}")
     else:

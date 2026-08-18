@@ -9,10 +9,12 @@ export default function SystemHealth() {
     observations,
     alerts,
     auditLog,
-    kpi
+    kpi,
+    quarantine,
+    tigerProfiles
   } = useAppContext();
 
-  const activeCameras = cameras.filter(c => c.status === 'online').length;
+  const isConnected = backendStatus.connected;
   const activeAlertsCount = alerts.filter(a => a.status === 'active').length;
   const recentLogs = auditLog.slice(0, 8);
 
@@ -20,91 +22,104 @@ export default function SystemHealth() {
     <div className="pg-page">
       <div className="page-header">
         <div>
-          <h2 className="page-title">System Health</h2>
+          <h2 className="page-title">System Health & Offline Telemetry</h2>
           <p className="page-subtitle">
             {isRealMode
-              ? 'Real Data Mode — Live local backend and telemetry status'
-              : 'Demo Mode — Infrastructure and pipeline status'}
+              ? 'Real-time local backend, PyTorch YOLO engine, and SQLite datastore status'
+              : 'Demo Mode — Presentation infrastructure status'}
           </p>
+        </div>
+        <div className={`proto-badge ${isRealMode ? 'real' : 'demo'}`}>
+          {isRealMode ? 'LOCAL OFFLINE MVP' : 'DEMO MODE'}
         </div>
       </div>
 
       <div className="system-grid">
+        {/* 1. YOLO AI Model */}
         <HealthCard
-          title="AI Inference Engine"
-          status={backendStatus.connected ? `Online (${backendStatus.model_name || 'best.pt'})` : 'Offline (Server Disconnected)'}
-          isOnline={backendStatus.connected}
-          latency={backendStatus.connected ? '42 ms' : 'N/A'}
-          subtitle={backendStatus.connected ? `Device: ${backendStatus.device || 'CPU'} | Ultralytics PyTorch` : 'Start server.py to connect local model'}
+          title="YOLOv8 AI Inference Engine"
+          status={isConnected ? `Online (${backendStatus.model_name || 'best.pt'})` : 'Offline'}
+          isOnline={isConnected}
+          latency={isConnected ? '42 ms' : 'N/A'}
+          subtitle={isConnected ? `Device: ${backendStatus.device || 'CPU'} | Class: Tiger` : 'Start server.py to connect YOLO'}
           icon="🧠"
         />
 
+        {/* 2. SQLite Database */}
         <HealthCard
-          title="Camera Trap Network"
-          status={`${activeCameras} / ${cameras.length} Active`}
-          isOnline={activeCameras > 0 || cameras.length === 0}
-          latency={isRealMode ? 'Live Sync' : '120 ms'}
-          subtitle={isRealMode ? 'Parsed Camera Trap Stations' : 'Simulated Network Grid'}
+          title="Persistent SQLite Datastore"
+          status={isConnected ? 'Online (data/penchguard.db)' : 'Disconnected'}
+          isOnline={isConnected}
+          latency={isConnected ? '1 ms' : 'N/A'}
+          subtitle={isConnected ? `${observations.length} Observations · ${tigerProfiles.length} Tigers · ${quarantine.length} Quarantined` : 'SQLite local database'}
+          icon="💾"
+        />
+
+        {/* 3. Camera Trap Mesh */}
+        <HealthCard
+          title="Camera Trap Station Mesh"
+          status={`${cameras.length} Stations Active`}
+          isOnline={cameras.length > 0}
+          latency="Live Sync"
+          subtitle={isRealMode ? 'Parsed Station Network' : 'Simulated Grid'}
           icon="📡"
         />
 
+        {/* 4. Safe Quarantine Storage */}
         <HealthCard
-          title="System Pipeline Mode"
-          status={isRealMode ? 'Real Data Mode' : 'Demo Mode'}
+          title="Safe Quarantine Store"
+          status={`${quarantine.length} Images Quarantined`}
           isOnline={true}
-          latency={isRealMode ? 'Active' : 'Presentation'}
-          subtitle={isRealMode ? 'Real Camera Trap Upload & Detection Engine' : 'Sample Demonstration Preset Data'}
-          icon="⚙"
+          latency="Local File System"
+          subtitle={`${kpi.storageSavedGb || 0} GB Storage Saved via Reversible Blank Triage`}
+          icon="🛡"
         />
 
+        {/* 5. Deviation Engine */}
         <HealthCard
-          title="Telemetry & Audit Log Bus"
-          status={`${auditLog.length} Events Logged`}
-          isOnline={true}
-          latency="2 ms"
-          subtitle="Audit Trail & Action Log Datastore"
-          icon="⚡"
-        />
-
-        <HealthCard
-          title="Alert & Geofence Processor"
+          title="Spatial Deviation Engine"
           status={`${activeAlertsCount} Active Alerts`}
           isOnline={true}
           latency="5 ms"
-          subtitle="Spatial Deviation & Boundary Breach Monitor"
+          subtitle="Core: 15km / Buffer: 5km Thresholds"
           icon="🚨"
         />
 
+        {/* 6. Audit Trail */}
         <HealthCard
-          title="Observations Datastore"
-          status={`${observations.length} Sightings Logged`}
+          title="Audit Trail Event Bus"
+          status={`${auditLog.length} Events Logged`}
           isOnline={true}
-          latency="8 ms"
-          subtitle={`${kpi.imagesProcessed || 0} Total Images Processed`}
-          icon="💾"
+          latency="Local Log"
+          subtitle="Full Human & AI Decision Accountability"
+          icon="⚡"
         />
       </div>
 
       <div className="system-detail-box">
-        <h4>Subsystem Event & Audit Log Stream</h4>
+        <h4>Recent System Audit Trail Stream</h4>
         <div className="log-window font-mono">
           {recentLogs.length > 0 ? (
             recentLogs.map((log, idx) => (
               <div key={log.id || idx}>
-                [{log.timestamp}] [{log.actor || 'System'}] {log.title}: {log.details}
+                [{log.timestamp}] [{log.actor || 'System'}] {log.action || log.title}: {log.details}
               </div>
             ))
           ) : (
-            <div>[INFO] Real Data Mode initialized. Awaiting camera trap uploads.</div>
+            <div>[INFO] System initialized. Awaiting camera trap uploads and inference actions.</div>
           )}
         </div>
       </div>
 
       <style>{`
         .pg-page { padding: 20px 24px; overflow-y: auto; height: 100%; }
-        .page-header { margin-bottom: 20px; }
+        .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
         .page-title { font-size: 20px; font-weight: 700; color: var(--text-bright); margin: 0 0 4px 0; }
         .page-subtitle { font-size: 12px; color: var(--text-dim); margin: 0; }
+
+        .proto-badge { font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 4px; }
+        .proto-badge.real { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #34d399; }
+        .proto-badge.demo { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #fbbf24; }
 
         .system-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
 
@@ -115,7 +130,7 @@ export default function SystemHealth() {
 
         .h-icon { font-size: 28px; }
         .h-body { flex: 1; }
-        .h-title { font-size: 14px; font-weight: 700; color: var(--text-bright); margin: 0 0 2px 0; }
+        .h-title { font-size: 13px; font-weight: 700; color: var(--text-bright); margin: 0 0 2px 0; }
         .h-sub { font-size: 10px; color: var(--text-dim); margin-bottom: 10px; }
 
         .h-status-row { display: flex; justify-content: space-between; align-items: center; }
@@ -133,6 +148,7 @@ export default function SystemHealth() {
         .log-window {
           background: #000; border: 1px solid rgba(255,255,255,0.06);
           border-radius: 8px; padding: 12px; font-size: 11px; color: #34d399; display: flex; flex-direction: column; gap: 6px;
+          max-height: 200px; overflow-y: auto;
         }
 
         @media (max-width: 900px) {
